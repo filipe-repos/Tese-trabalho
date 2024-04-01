@@ -383,7 +383,7 @@ def simula(net, dim):
     #testing best genome in new situations with new prey positions
     print("testing best genome in new situations with new prey positions")
     for prey in preys_test:
-        simula1(net,copy.deepcopy(preds_def), copy.deepcopy(prey), dim)
+        simula1(net,copy.deepcopy(preds_def), copy.deepcopy(prey), dim, TICKS)
 
 def simula1(net, preds, prey, dist, ticks):
     
@@ -594,7 +594,7 @@ def run_experiment(config_file):
     print('\nBest genome:\n{!s}'.format(best_genome))
 
     # Visualize the experiment results
-    node_names = {-1:'offx1', -2: 'offy1', -3: 'offx2', -4: 'offy2', -5: 'offx3', -6: 'offy3', -7: 'offx4', -8: 'offy4', 0:'Move_output?'}
+    node_names = {-1:'offx1', -2: 'offy1', -3: 'offx2', -4: 'offy2', -5: 'offx3', -6: 'offy3', -7: 'offx4', -8: 'offy4', 0:'Move_outputp1', 1:'Move_outputp2', 2:'Move_outputp3', 3:'Move_outputp4'}
     visualize.draw_net(config, best_genome, True, node_names=node_names, directory=out_dir)
     print("AQUI!!!")
     visualize.plot_stats(stats, ylog=False, view=True, filename=os.path.join(out_dir, 'avg_fitness.svg'))
