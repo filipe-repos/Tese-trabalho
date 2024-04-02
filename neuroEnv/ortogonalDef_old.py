@@ -330,6 +330,12 @@ def atravessaram_a(preds, prey):
     return False    
 
 
+#preds_list= createpredators_obsolete(DIM, DIST, N_EVALS)
+#prey = createPrey_obsolete(DIM, DIST)
+preds_def = createpredators_bottom(HEIGHT, WIDTH, N_PREDS, STEP)
+preys_def = createPreys(HEIGHT, WIDTH, preds_def, STEP, N_EVALS)
+preys_test = createPreys(HEIGHT, WIDTH, preds_def, STEP, N_EVALS*10)
+
 def ann_inputs_outputs(preds, prey, net):
     preds_coords = [p.get_coords() for p in preds]
     preyx, preyy = prey.get_coords()
@@ -375,9 +381,9 @@ def simula(net, dim):
         print("simulação",cont)
         simula1(net,copy.deepcopy(preds_def), copy.deepcopy(prey), dim, TICKS)
     #testing best genome in new situations with new prey positions
-    #print("testing best genome in new situations with new prey positions")
-    #for prey in preys_test:
-    #    simula1(net,copy.deepcopy(preds_def), copy.deepcopy(prey), dim, TICKS)
+    print("testing best genome in new situations with new prey positions")
+    for prey in preys_test:
+        simula1(net,copy.deepcopy(preds_def), copy.deepcopy(prey), dim, TICKS)
 
 def simula1(net, preds, prey, dist, ticks):
     
@@ -396,7 +402,7 @@ def simula1(net, preds, prey, dist, ticks):
     tpreds = []
 
     for pred, color in zip(preds, colors):
-        tpred = turtle_agent(pred.get_coords(), color)
+        tpred= turtle_agent(pred.get_coords(), color)
         tpreds.append(tpred)
 
     tprey = turtle_agent(prey_coords, "blue", "turtle")
@@ -416,7 +422,7 @@ def simula1(net, preds, prey, dist, ticks):
 
         #print("pred new coords: ", tpred.position())
         #To make the prey not move commented the method function to make it move
-        #tprey_move(tprey, tpreds, STEP)
+        #tprey_move(tprey, (tpred1, tpred2, tpred3, tpred4), STEP)
 
         image = ImageGrab.grab(bbox=(10, 10, 10+com, 10+larg))
         frames.append(image)
@@ -438,7 +444,7 @@ def simula1(net, preds, prey, dist, ticks):
                loop=1)  # Set loop to 0 for infinite loop
             return
 
-    inidists = [toroidalDistance_coords(tpred.initial_pos, tprey.position(), HEIGHT, WIDTH) for tpred in tpreds]
+    inidists = [toroidalDistance_coords(tpred.initial_coords, tprey.position(), HEIGHT, WIDTH) for tpred in tpreds]
     mediainidists = sum(inidists) / n_preds
 
     finaldists = [toroidalDistance_coords(tpred.position(), tprey.position(), HEIGHT, WIDTH) for pred in preds]
@@ -530,11 +536,7 @@ def eval_fitness1(net, theprey, ticks):
     #print("fitness:", (mediainidists - mediafinaldists) / 10)
     return (mediainidists- mediafinaldists) / 10
 
-#preds_list= createpredators_obsolete(DIM, DIST, N_EVALS)
-#prey = createPrey_obsolete(DIM, DIST)
-preds_def = createpredators_bottom(HEIGHT, WIDTH, N_PREDS, STEP)
-preys_def = createPreys(HEIGHT, WIDTH, preds_def, STEP, N_EVALS)
-preys_test = createPreys(HEIGHT, WIDTH, preds_def, STEP, N_EVALS*10)
+
 
 def eval_genomes(genomes, config):
     """
@@ -586,7 +588,7 @@ def run_experiment(config_file):
 
 
     # Run for up to 300 generations.
-    best_genome = p.run(eval_genomes, 10)#500
+    best_genome = p.run(eval_genomes, 500)#300
 
     # Display the best genome among generations.
     print('\nBest genome:\n{!s}'.format(best_genome))

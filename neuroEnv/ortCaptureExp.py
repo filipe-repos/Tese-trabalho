@@ -21,14 +21,20 @@ import pickle
 from agents import Agent
 import turtle
 
-DIM = 2
 
+#DIST is The dimensions of map, onlyapplicable if map is square
 DIST = 350
+#width of map
 WIDTH = 350
+#height of map
 HEIGHT = 350
+#Step how much the agents(preds and prey) move per turn. Should allways be DIST/50
 STEP = 7
-N_EVALS = 1
-N_PREDS = 4
+#N_Evals is the number of different evaluations(cases where prey is in different position) done per genome per generation
+N_EVALS = 10
+#N_PREDS is the number of predators to be present in experiment and to chase the prey
+N_PREDS = 3
+#TICKS is the limit of turns allowed or movements to be done by all agents before the experiment ends
 TICKS = int(((HEIGHT*2) / STEP) * 1.5)
 
 #older version that generates quadpairs of preds in random positions not to use
@@ -329,7 +335,6 @@ def atravessaram_a(preds, prey):
             return True
     return False    
 
-
 def ann_inputs_outputs(preds, prey, net):
     preds_coords = [p.get_coords() for p in preds]
     preyx, preyy = prey.get_coords()
@@ -368,18 +373,18 @@ def ann_inputs_outputs_t(tpreds, tprey, net):
 
 
 #simula
-def simula(net, dim):
+def simula(net, preds, preys, preys_test, height, width, ticks):
     cont = 0
-    for prey in preys_def:
+    for prey in preys:
         cont+=1
         print("simulação",cont)
-        simula1(net,copy.deepcopy(preds_def), copy.deepcopy(prey), dim, TICKS)
+        simula1(net,copy.deepcopy(preds), copy.deepcopy(prey), height, width, ticks)
     #testing best genome in new situations with new prey positions
-    #print("testing best genome in new situations with new prey positions")
-    #for prey in preys_test:
-    #    simula1(net,copy.deepcopy(preds_def), copy.deepcopy(prey), dim, TICKS)
+    print("testing best genome in new situations with new prey positions")
+    for prey in preys_test:
+        simula1(net,copy.deepcopy(preds), copy.deepcopy(prey), height,width, ticks)
 
-def simula1(net, preds, prey, dist, ticks):
+def simula1(net, preds, prey, height, width, ticks):
     
     preds = copy.deepcopy(preds)#preds
 
@@ -390,7 +395,7 @@ def simula1(net, preds, prey, dist, ticks):
     n_preds = len(preds)
 
     map = turtle.Screen()
-    map.screensize(dist, dist)
+    map.screensize(height, width)
     map.bgcolor("lightgreen")    # set the window background color
     #map.tracer(0, 0)             # to make map not display anything making the execution much faster
     tpreds = []
@@ -416,7 +421,7 @@ def simula1(net, preds, prey, dist, ticks):
 
         #print("pred new coords: ", tpred.position())
         #To make the prey not move commented the method function to make it move
-        #tprey_move(tprey, tpreds, STEP)
+        tprey_move(tprey, tpreds, STEP)
 
         image = ImageGrab.grab(bbox=(10, 10, 10+com, 10+larg))
         frames.append(image)
@@ -454,21 +459,15 @@ def simula1(net, preds, prey, dist, ticks):
                loop=2)  # Set loop to 0 for infinite loop
 
 
-local_dir = os.path.dirname(__file__)
-# The directory to store outputs
-out_dir = os.path.join(local_dir, 'out')
-
-input_data = ([5,5], [5,6], [10,10], [10,11], [20,20], [19,20], [1,20])
-
 #calculo da média dos fitness das várias avaliações de cada rede neuronal numa lista de preys
-def eval_fitness(net):
+def eval_fitness(net, preds_def, preys_def, height, width, ticks):
     the_fitness= 0
     #cycle_count = 0
     #print([p.get_coords() for p in preys_def])
     for prey in preys_def:
         #cycle_count += 1
         #print("CYCLE:", cycle_count)
-        f1 = eval_fitness1(net, prey, TICKS)
+        f1 = eval_fitness1(net, preds_def, prey, height, width, ticks)
         #print("eval1", f1)
         the_fitness += f1
     #print("the summed fitness:", the_fitness, "the number of experiments per genome:", len(preys_def))
@@ -476,7 +475,7 @@ def eval_fitness(net):
 
 
 #Urgent to change 
-def eval_fitness1(net, theprey, ticks):
+def eval_fitness1(net, preds_def, theprey, height, width, ticks):
     """
     Evaluates fitness of the genome that was used to generate 
     provided net
@@ -500,7 +499,7 @@ def eval_fitness1(net, theprey, ticks):
 
 
         #To make the prey not move commented the method function to make it move
-        #prey_move(prey, preds, STEP)
+        prey_move(prey, preds, STEP)
 
         #print("pred1_initialpos: ", pred1.get_initial_coords())
         #print("prey pos: ", prey.get_coords())
@@ -510,7 +509,7 @@ def eval_fitness1(net, theprey, ticks):
 
         if captura_a(preds, prey):#if dist1 <= 40 or dist2 <= 40 or dist3 <= 40 or dist4 <= 40:
 
-            finaldists = [toroidalDistance_coords(pred.get_coords(), prey.get_coords(), HEIGHT, WIDTH) for pred in preds]
+            finaldists = [toroidalDistance_coords(pred.get_coords(), prey.get_coords(), height, width) for pred in preds]
             mediafinaldists = sum(finaldists) / n_preds
         
         #print("Media das distâncias ortogonais finais de todos os predadores à presa:", mediafinaldists)
@@ -518,23 +517,32 @@ def eval_fitness1(net, theprey, ticks):
             print("presa apanhada!!!")
             #print("presa: ", prey.get_coords())
             print()
-            print("fitness:", (2*(WIDTH + HEIGHT) - mediafinaldists)/ 10)
-            return ((2*(WIDTH + HEIGHT) - mediafinaldists)/ 10) # max threshold is 160 ((1600 - 0) / 10)
+            print("fitness:", (2*(width + height) - mediafinaldists)/ 10)
+            return ((2*(width + height) - mediafinaldists)/ 10) # max threshold is 160 ((1600 - 0) / 10)
 
-    inidists = [toroidalDistance_coords(pred.get_initial_coords(), prey.get_coords(), HEIGHT, WIDTH) for pred in preds]
+    inidists = [toroidalDistance_coords(pred.get_initial_coords(), prey.get_coords(), height, width) for pred in preds]
     mediainidists = sum(inidists) / n_preds
 
-    finaldists = [toroidalDistance_coords(pred.get_coords(), prey.get_coords(), HEIGHT, WIDTH) for pred in preds]
+    finaldists = [toroidalDistance_coords(pred.get_coords(), prey.get_coords(), height, width) for pred in preds]
     mediafinaldists = sum(finaldists) / n_preds
     #print("fitness:",1/(dist1 + dist2 + dist3 + dist4))
     #print("fitness:", (mediainidists - mediafinaldists) / 10)
-    return (mediainidists- mediafinaldists) / 10
+    return (mediainidists - mediafinaldists) / 10
 
-#preds_list= createpredators_obsolete(DIM, DIST, N_EVALS)
-#prey = createPrey_obsolete(DIM, DIST)
-preds_def = createpredators_bottom(HEIGHT, WIDTH, N_PREDS, STEP)
-preys_def = createPreys(HEIGHT, WIDTH, preds_def, STEP, N_EVALS)
-preys_test = createPreys(HEIGHT, WIDTH, preds_def, STEP, N_EVALS*10)
+
+# more constants
+
+#the list of Preds to be used in in each avaliation
+PREDS_DEF = createpredators_bottom(HEIGHT, WIDTH, N_PREDS, STEP)
+#the list of Preys to be used in in evalfitness_1()
+PREYS_DEF = createPreys(HEIGHT, WIDTH, PREDS_DEF, STEP, N_EVALS)
+#the list of Preysc for testing to be used in each simulation1()
+PREYS_TEST = createPreys(HEIGHT, WIDTH, PREDS_DEF, STEP, N_EVALS*10)
+
+local_dir = os.path.dirname(__file__)
+# The directory to store outputs
+out_dir = os.path.join(local_dir, 'out')
+
 
 def eval_genomes(genomes, config):
     """
@@ -558,7 +566,7 @@ def eval_genomes(genomes, config):
         print("\nGENOME COUNT", genome_count )
         genome.fitness = 0.0
         net = neat.nn.FeedForwardNetwork.create(genome, config)
-        genome.fitness = eval_fitness(net)
+        genome.fitness = eval_fitness(net, PREDS_DEF, PREYS_DEF, HEIGHT, WIDTH, TICKS)
 
 def run_experiment(config_file):
     """
@@ -586,7 +594,7 @@ def run_experiment(config_file):
 
 
     # Run for up to 300 generations.
-    best_genome = p.run(eval_genomes, 10)#500
+    best_genome = p.run(eval_genomes, 300)#500
 
     # Display the best genome among generations.
     print('\nBest genome:\n{!s}'.format(best_genome))
@@ -626,36 +634,53 @@ def clean_output():
     # create the output directory
     os.makedirs(out_dir, exist_ok=False)
 
-if __name__ == '__main__':
-    # Determine path to configuration file. This path manipulation is
-    # here so that the script will run successfully regardless of the
-    # current working directory.
-    config_path = os.path.join(local_dir, 'exercise.ini')
+def nrunexperiment(n):
+    best_of_the_bestGenome = None
+    best_of_the_bestGenomefitness = 0
+    #run this n times
+    for i in range(n):
+        if __name__ == '__main__':
+            # Determine path to configuration file. This path manipulation is
+            # here so that the script will run successfully regardless of the
+            # current working directory.
+            config_path = os.path.join(local_dir, 'exercise.ini')
 
-    # Clean results of previous run if any or init the output directory
-    clean_output()
-    print("BEGINNING!")
-    # Run the experiment
-    best_genome = run_experiment(config_path)
+            # Clean results of previous run if any or init the output directory
+            
+            clean_output()
+            print("BEGINNING!")
 
-    # Assuming 'genome' is your NEAT genome object
-    genome_path = 'genome.pkl'
+            # Run the experiment
+            best_genome = run_experiment(config_path)
+            #to get the best genome out of the n resulting best genomes of the n experiments 
+            if best_genome.fitness > best_of_the_bestGenomefitness:
+                best_of_the_bestGenomefitness = best_genome.fitness
+                best_of_the_bestGenome = best_genome
+                
+            # Assuming 'genome' is your NEAT genome object
+            genome_path = 'goodgenomes.pkl'
 
-    # Save the genome to a file
+            # Save the genome to a file
+            with open("goodgenomes.pkl", "wb") as f:
+                pickle.dump(best_genome, f)
+                f.close()
+
+    #keep the best genome of the n experimentations in a separate file
+    best_genome_path = 'bestgenome.pkl'
     with open("bestgenome.pkl", "wb") as f:
-        pickle.dump(best_genome, f)
-        f.close()
+            pickle.dump(best_of_the_bestGenome, f)
+            f.close()
 
-    # Later, you can load the genome from the file
-    #with open(genome_path, 'r') as f:
-    #    loaded_genome = neat.Genome()
-    #    loaded_genome.parse(f)
     print("end of regular experimentation!")
     print()
-    print("simulate behavior of best genome:", best_genome)
+
+    print("simulate behavior of best genome:", best_of_the_bestGenome)
     config = neat.Config(neat.DefaultGenome, neat.DefaultReproduction,
-                         neat.DefaultSpeciesSet, neat.DefaultStagnation,
-                         config_path)
-    net = neat.nn.FeedForwardNetwork.create(best_genome, config)
-    simula(net, DIST)
+                        neat.DefaultSpeciesSet, neat.DefaultStagnation,
+                        config_path)
+    net = neat.nn.FeedForwardNetwork.create(best_of_the_bestGenome, config)
+    simula(net, PREDS_DEF, PREYS_DEF, PREYS_TEST, HEIGHT, WIDTH, TICKS)
     print("The END.")
+
+
+nrunexperiment(30)
