@@ -1,7 +1,7 @@
 #
 # This file provides source code of the predator prey coordenation experiment using on NEAT-Python library
 #
-#experiência de captura em equipa (heterógenea), de 3(n_preds) outputs gerados a partir 6 inputs(offsets x,y dos 3 predadores) 
+
 # The Python standard library import
 import os
 import shutil
@@ -250,7 +250,6 @@ def pred_move(pred, output, step):
     x,y =toroidal_pos(new_coords, WIDTH, HEIGHT)
     pred.set_coords(x,y)
 
-
 #to move turtle object prey
 def tprey_move(prey, tpreds, step):
     #calculating closest pred
@@ -351,42 +350,30 @@ def atravessaram_a(preds, prey):
             return True
     return False    
 
-def ann_inputs_outputs(preds, prey, net):
-    preds_coords = [p.get_coords() for p in preds]
+#new functions to handle communication
+def ann_inputs_outputs_signal(pred, signals, prey, net):
+    #signal1, signal2 = signals #mudar porque o numero de sinais depende do numero de predadores e não serão sempre 2
+    x,y = pred.get_coords()
     preyx, preyy = prey.get_coords()
-    input_data = []
-    for x,y in preds_coords:
-        #print("\npredx: ", x, "preyx:", preyx)
-        #print("predy: ", y, "preyy:", preyy)
-        offsetx = toroidalDistance1coord(x, preyx, WIDTH)
-        offsety = toroidalDistance1coord(y, preyy, HEIGHT)
-        norm_offsetx = ((offsetx/ WIDTH) +1 )/2
-        norm_offsety = ((offsety/ HEIGHT) +1 )/2
-        #print("offsetx: ", offsetx, " ; norm_offsetx", norm_offsetx)
-        #print("offsety: ", offsety, " ; norm_offsety", norm_offsety)
-        input_data.append(norm_offsetx)
-        input_data.append(norm_offsety)
-    #print("INPUTS!:", input_data1)
-    return net.activate(input_data)
+    offsetx = toroidalDistance1coord(x, preyx, WIDTH)
+    offsety = toroidalDistance1coord(y, preyy, HEIGHT)
+    norm_offsetx = ((offsetx/ WIDTH) +1 )/2
+    norm_offsety = ((offsety/ HEIGHT) +1 )/2
+    input_data = [norm_offsetx, norm_offsety] + signals
+    #print("tuple(net.activate(input_data)):", tuple(net.activate(input_data)))
+    output, signal = tuple(net.activate(input_data))
+    return output, signal
 
-def ann_inputs_outputs_t(tpreds, tprey, net):
-    preds_coords = [p.position() for p in tpreds]
-    preyx, preyy = tprey.position()
-    input_data = []
-    for x,y in preds_coords:
-        print("\npredx: ", x, "preyx:", preyx)
-        print("predy: ", y, "preyy:", preyy)
-        offsetx = toroidalDistance1coord(x, preyx, WIDTH)
-        offsety = toroidalDistance1coord(y, preyy, HEIGHT)
-        norm_offsetx = ((offsetx/ WIDTH) +1 )/2
-        norm_offsety = ((offsety/ HEIGHT) +1 )/2
-        print("offsetx: ", offsetx, " ; norm_offsetx", norm_offsetx)
-        print("offsety: ", offsety, " ; norm_offsety", norm_offsety)
-        input_data.append(norm_offsetx)
-        input_data.append(norm_offsety)
-    #print("INPUTS!:", input_data1)
-    return net.activate(input_data)
-
+def ann_inputs_outputs_signal_t(tpred, signals, tprey, net):
+    x,y = tpred.pos()
+    preyx, preyy = tprey.pos()
+    offsetx = toroidalDistance1coord(x, preyx, WIDTH)
+    offsety = toroidalDistance1coord(y, preyy, HEIGHT)
+    norm_offsetx = ((offsetx/ WIDTH) +1 )/2
+    norm_offsety = ((offsety/ HEIGHT) +1 )/2
+    input_data = [norm_offsetx, norm_offsety] + signals
+    output, signal = tuple(net.activate(input_data))
+    return output, signal
 
 #simula
 def simula(net, preds, preys, preys_test, height, width, ticks):
@@ -408,12 +395,13 @@ def simula1(net, preds, prey, height, width, ticks):
 
     colors = ["yellow", "orange", "red", "black", "yellow", "orange", "red", "black"]
     n_preds = len(preds)
+    signals = [0 for n in range(n_preds)]
 
     map = turtle.Screen()
     map.screensize(height, width)
     map.bgcolor("lightgreen")    # set the window background color
     #map.tracer(0, 0)             # to make map not display anything making the execution much faster
-    tpreds = []
+    tpreds = []    
 
     for pred, color in zip(preds, colors):
         tpred = turtle_agent(pred.get_coords(), color)
@@ -432,8 +420,12 @@ def simula1(net, preds, prey, height, width, ticks):
     for count in range(ticks):
         count +=1
         
-        outputs = ann_inputs_outputs_t(tpreds, tprey, net)
-        for tpred, output in zip(tpreds, outputs):
+        for npredsig in range(n_preds):#for pred, signal in zip (preds, signals):
+            tpred = tpreds[npredsig]
+            sinaisOutrem =  copy.deepcopy(signals)
+            del sinaisOutrem[npredsig]
+            output, signal = ann_inputs_outputs_signal_t(tpred, sinaisOutrem, tprey, net)
+            signals[npredsig] = signal
             tpred_move(tpred, output, STEP*2)
 
         #print("pred new coords: ", tpred.position())
@@ -511,14 +503,18 @@ def eval_fitness1(net, preds_def, theprey, height, width, ticks):
     #for pred in preds:
         #print("pred pos: ", pred.get_coords())
     #print("prey pos:", prey.get_coords())
-    
+    signals = [0 for n in range(n_preds)]
+
     for count in range(ticks): #(500 * 2 / 10) * (3/2) = 150
         
-        outputs = ann_inputs_outputs(preds, prey, net)
-        for pred, output in zip(preds, outputs):
+        for npredsig in range(n_preds):#for pred, signal in zip (preds, signals):
+            pred = preds[npredsig]
+            sinaisOutrem =  copy.deepcopy(signals)
+            del sinaisOutrem[npredsig]
+            output, signal = ann_inputs_outputs_signal(pred, sinaisOutrem, prey, net)
+            signals[npredsig] = signal
+            #no simula por aqui para mudar a cor do agente de acordo com o sinal
             pred_move(pred, output, STEP*2)
-            #print("pred new coords: ", pred.get_coords())
-
 
         #To make the prey not move commented the method function to make it move
         prey_move(prey, preds, STEP)
@@ -616,7 +612,7 @@ def run_experiment(config_file):
 
 
     # Run for up to 300 generations.
-    best_genome = p.run(eval_genomes, 1000)#500
+    best_genome = p.run(eval_genomes, 300)#500
 
     # Display the best genome among generations.
     print('\nBest genome:\n{!s}'.format(best_genome))
@@ -710,4 +706,4 @@ def nrunexperiment(n):
     print("The END.")
 
 
-nrunexperiment(10)
+nrunexperiment(30)

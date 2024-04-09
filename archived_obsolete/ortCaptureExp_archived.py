@@ -1,7 +1,7 @@
 #
 # This file provides source code of the predator prey coordenation experiment using on NEAT-Python library
 #
-#experiência de captura em equipa (heterógenea), de 3(n_preds) outputs gerados a partir 6 inputs(offsets x,y dos 3 predadores) 
+
 # The Python standard library import
 import os
 import shutil
@@ -31,7 +31,7 @@ HEIGHT = 350
 #Step how much the agents(preds and prey) move per turn. Should allways be DIST/50
 STEP = 7
 #N_Evals is the number of different evaluations(cases where prey is in different position) done per genome per generation
-N_EVALS = 1
+N_EVALS = 10
 #N_PREDS is the number of predators to be present in experiment and to chase the prey
 N_PREDS = 3
 #TICKS is the limit of turns allowed or movements to be done by all agents before the experiment ends
@@ -72,20 +72,6 @@ def createPrey(height, width, preds, step):
 
 def createPreys(height, width, preds, step, n):
     return [createPrey(height, width, preds, step) for _ in range(n)]
-
-def createPreys9(height, width, preds, step):
-    segmentw = width*2/3
-    segmenth = height*2/3
-    prey1 = Agent((random.randint(-width//step, (-width+ segmentw)//step) * step, random.randint(-height//step, (-height+segmenth)//step) * step))
-    prey2 = Agent((random.randint((-width+ segmentw)//step, (width - segmentw)//step) * step, random.randint((-height//step), (-height+segmenth)//step) * step))
-    prey3 = Agent((random.randint((width - segmentw)//step, width//step) * step, random.randint(-height//step, (-height+segmenth)//step) * step))
-    prey4 = Agent((random.randint(-width//step, (-width+ segmentw)//step) * step, random.randint((-height+segmenth)//step, (height-segmenth)//step) * step))
-    prey5 = Agent((random.randint((-width+ segmentw)//step, (width - segmentw)//step) * step, random.randint((-height+segmenth)//step, (height-segmenth)//step) * step))
-    prey6 = Agent((random.randint((width - segmentw)//step, width//step) * step, random.randint((-height+segmenth)//step, (height-segmenth)//step) * step))
-    prey7 = Agent((random.randint(-width//step, (-width+ segmentw)//step) * step, random.randint((height-segmenth)//step, height//step) * step))
-    prey8 = Agent((random.randint((-width+ segmentw)//step, (width - segmentw)//step) * step, random.randint((height-segmenth)//step, height//step) * step))
-    prey9 = Agent((random.randint((width - segmentw)//step, width//step) * step, random.randint((height-segmenth)//step, height//step) * step))
-    return [prey1, prey2, prey3, prey4, prey5, prey6, prey7, prey8, prey9]
 
 def turtle_agent(agent_coords, color= "blue", forma = "circle"):
     ag = turtle.Turtle(shape = forma, visible= False)      # create a turtle named tpred
@@ -182,9 +168,9 @@ def toroidal_pos(pos, max_width, max_height):
     '''
     x,y = pos
     if abs(x) > max_width:
-        x = math.copysign(max_width-(abs(x) - max_width), x * -1)
+         x = math.copysign(max_width, x * -1)
     if abs(y) > max_height:
-        y = math.copysign(max_height-(abs(y) - max_height), y * -1)
+         y = math.copysign(max_height, y * -1)
     return x,y
 
 #to use only in simulation with visualization        
@@ -193,7 +179,7 @@ def toroidalcheck(turtle, max_width, max_height, speed):
         turtle.hideturtle()
         turtle.penup()
         turtle.speed(max_width)
-        turtle.setx(math.copysign(max_width-(abs(turtle.xcor()) - max_width), turtle.xcor() * -1))
+        turtle.setx(math.copysign(max_width, turtle.xcor() * -1))
         turtle.speed(speed)
         turtle.showturtle()
         turtle.pendown()
@@ -201,7 +187,7 @@ def toroidalcheck(turtle, max_width, max_height, speed):
         turtle.hideturtle()
         turtle.penup()
         turtle.speed(max_height)
-        turtle.sety(math.copysign(max_height-(abs(turtle.ycor()) - max_height), turtle.ycor() * -1))
+        turtle.sety(math.copysign(max_height, turtle.ycor() * -1))
         turtle.speed(speed)
         turtle.showturtle()
         turtle.pendown()
@@ -253,7 +239,6 @@ def pred_move(pred, output, step):
 
 #to move turtle object prey
 def tprey_move(prey, tpreds, step):
-    #calculating closest pred
     closestdistance = toroidalDistance_coords(tpreds[0].old_pos, prey.pos(), WIDTH, HEIGHT)
     closestpred = tpreds[0]
     for tp in tpreds[1:]:
@@ -290,8 +275,7 @@ def tprey_move(prey, tpreds, step):
 
 #to move not turtle object prey 
 def prey_move(prey, preds, step):
-    #calculating closest pred
-    closestdistance = toroidalDistance_coords(preds[0].old_coords, prey.get_coords(), WIDTH, HEIGHT)
+    closestdistance = toroidalDistance_coords(preds[0].get_coords(), prey.get_coords(), WIDTH, HEIGHT)
     closestpred = preds[0]
     for tp in preds[1:]:
         distance = toroidalDistance_coords(tp.old_coords, prey.get_coords(), WIDTH, HEIGHT)
@@ -334,7 +318,7 @@ def captura(preds, prey):
 
 def atravessaram(preds, prey):
     for p in preds:
-        if p.old_pos == prey.pos() or prey.old_pos == p.pos(): # previous was and
+        if p.old_pos == prey.pos() and prey.old_pos == p.pos():
             return True
     return False    
 
@@ -347,7 +331,7 @@ def captura_a(preds, prey):
 
 def atravessaram_a(preds, prey):
     for p in preds:
-        if p.get_old_coords() == prey.get_coords() or prey.get_old_coords() == p.get_coords(): # previous was and
+        if p.get_old_coords() == prey.get_coords() and prey.get_old_coords() == p.get_coords():
             return True
     return False    
 
@@ -397,12 +381,13 @@ def simula(net, preds, preys, preys_test, height, width, ticks):
         simula1(net,copy.deepcopy(preds), copy.deepcopy(prey), height, width, ticks)
     #testing best genome in new situations with new prey positions
     print("testing best genome in new situations with new prey positions")
-    #for prey in preys_test:
-    #    simula1(net,copy.deepcopy(preds), copy.deepcopy(prey), height,width, ticks)
+    for prey in preys_test:
+        simula1(net,copy.deepcopy(preds), copy.deepcopy(prey), height,width, ticks)
 
 def simula1(net, preds, prey, height, width, ticks):
     
     preds = copy.deepcopy(preds)#preds
+
     prey = copy.deepcopy(prey)
     prey_coords = prey.get_coords()
 
@@ -418,10 +403,8 @@ def simula1(net, preds, prey, height, width, ticks):
     for pred, color in zip(preds, colors):
         tpred = turtle_agent(pred.get_coords(), color)
         tpreds.append(tpred)
-        #print("tpred pos: ", tpred.pos())
 
     tprey = turtle_agent(prey_coords, "blue", "turtle")
-    #print("tprey pros: ", tprey.pos())
 
     frames = []
     window = gw.getWindowsWithTitle("Python Turtle Graphics")[0]
@@ -434,7 +417,7 @@ def simula1(net, preds, prey, height, width, ticks):
         
         outputs = ann_inputs_outputs_t(tpreds, tprey, net)
         for tpred, output in zip(tpreds, outputs):
-            tpred_move(tpred, output, STEP*2)
+            tpred_move(tpred, output, STEP)
 
         #print("pred new coords: ", tpred.position())
         #To make the prey not move commented the method function to make it move
@@ -507,16 +490,11 @@ def eval_fitness1(net, preds_def, theprey, height, width, ticks):
     preds = copy.deepcopy(preds_def)
     prey = copy.deepcopy(theprey)
     n_preds = len(preds)
-    
-    #for pred in preds:
-        #print("pred pos: ", pred.get_coords())
-    #print("prey pos:", prey.get_coords())
-    
     for count in range(ticks): #(500 * 2 / 10) * (3/2) = 150
         
         outputs = ann_inputs_outputs(preds, prey, net)
         for pred, output in zip(preds, outputs):
-            pred_move(pred, output, STEP*2)
+            pred_move(pred, output, STEP)
             #print("pred new coords: ", pred.get_coords())
 
 
@@ -560,7 +538,7 @@ PREDS_DEF = createpredators_bottom(HEIGHT, WIDTH, N_PREDS, STEP)
 PREYS_DEF = createPreys(HEIGHT, WIDTH, PREDS_DEF, STEP, N_EVALS)
 #the list of Preysc for testing to be used in each simulation1()
 PREYS_TEST = createPreys(HEIGHT, WIDTH, PREDS_DEF, STEP, N_EVALS*10)
-PREYS_9 = createPreys9(HEIGHT, WIDTH, PREDS_DEF, STEP)
+
 local_dir = os.path.dirname(__file__)
 # The directory to store outputs
 out_dir = os.path.join(local_dir, 'out')
@@ -616,7 +594,7 @@ def run_experiment(config_file):
 
 
     # Run for up to 300 generations.
-    best_genome = p.run(eval_genomes, 1000)#500
+    best_genome = p.run(eval_genomes, 300)#500
 
     # Display the best genome among generations.
     print('\nBest genome:\n{!s}'.format(best_genome))
@@ -674,7 +652,6 @@ def nrunexperiment(n):
 
             # Run the experiment
             best_genome = run_experiment(config_path)
-            print("best_genome.fitness:", best_genome.fitness)
             #to get the best genome out of the n resulting best genomes of the n experiments 
             if best_genome.fitness > best_of_the_bestGenomefitness:
                 best_of_the_bestGenomefitness = best_genome.fitness
@@ -688,16 +665,12 @@ def nrunexperiment(n):
                 pickle.dump(best_genome, f)
                 f.close()
 
-            if i < n-1:
-                userinput = str(input("want to carry on with the program?:(y/n) "))
-                if userinput == "n":
-                    break
     #keep the best genome of the n experimentations in a separate file
     best_genome_path = 'bestgenome.pkl'
     with open("bestgenome.pkl", "wb") as f:
             pickle.dump(best_of_the_bestGenome, f)
             f.close()
-    print("best_of_the_bestGenome.fitness", best_of_the_bestGenome.fitness)
+
     print("end of regular experimentation!")
     print()
 
@@ -710,4 +683,4 @@ def nrunexperiment(n):
     print("The END.")
 
 
-nrunexperiment(10)
+nrunexperiment(30)

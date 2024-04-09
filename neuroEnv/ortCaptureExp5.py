@@ -1,7 +1,7 @@
 #
 # This file provides source code of the predator prey coordenation experiment using on NEAT-Python library
 #
-#experiência de captura em equipa (heterógenea), de 3(n_preds) outputs gerados a partir 6 inputs(offsets x,y dos 3 predadores) 
+#experiência de captura em equipa (heterógenea), de 15(3(n_preds)*5) outputs gerados a partir 6 inputs(offsets x,y dos 3 predadores) 
 # The Python standard library import
 import os
 import shutil
@@ -20,7 +20,7 @@ import pickle
 
 from agents import Agent
 import turtle
-
+from threading import Timer
 
 #DIST is The dimensions of map, onlyapplicable if map is square
 DIST = 350
@@ -186,6 +186,17 @@ def toroidal_pos(pos, max_width, max_height):
     if abs(y) > max_height:
         y = math.copysign(max_height-(abs(y) - max_height), y * -1)
     return x,y
+    #if x > max_width:
+    #    dif = x - max_width
+    #    x = -max_width + dif
+    #elif x < -max_width:
+    #    x = max_width + (x + max_width) 
+    #if y > max_height:
+    #    dif = y - max_height
+    #    y = -max_height + dif
+    #elif y < -max_height:
+    #    y = max_height + (y + max_height) 
+    #return x,y
 
 #to use only in simulation with visualization        
 def toroidalcheck(turtle, max_width, max_height, speed):
@@ -206,41 +217,53 @@ def toroidalcheck(turtle, max_width, max_height, speed):
         turtle.showturtle()
         turtle.pendown()
 
-# to move turtle object pred 
-def tpred_move(pred, output, speed):
-    pred.old_pos = pred.pos()
-    if 0.2 > output >= 0:
+# to move turtle object pred with 5 outputs 
+def tpred_move5(tpred, outputs, speed):
+    tpred.old_pos = tpred.pos()
+    biggerOutput = outputs[0]
+    biggerOutputN = 0
+    for n in range(1, len(outputs)):
+        if outputs[n] > biggerOutput:
+            biggerOutput = outputs[n]
+            biggerOutputN = n
+    if biggerOutputN == 0:
         #print("predador não se moveu!")
         return
-    elif 0.4 > output >= 0.2:
+    elif biggerOutputN == 1:
         #print("predador move-se para este!")
-        pred.setheading(0)
-    elif 0.6 > output >= 0.4:
+        tpred.setheading(0)
+    elif biggerOutputN == 2:
         #print("predador move-se para norte!")
-        pred.setheading(90)        
-    elif 0.8 > output >= 0.6:
+        tpred.setheading(90)        
+    elif biggerOutputN == 3:
         #print("predador move-se para oeste!")
-        pred.setheading(180)        
+        tpred.setheading(180)        
     else:
         #print("predador move-se para sul!")
-        pred.setheading(270)       
-    pred.forward(speed)
-    toroidalcheck(pred, WIDTH, HEIGHT, speed)
+        tpred.setheading(270)       
+    tpred.forward(speed)
+    toroidalcheck(tpred, WIDTH, HEIGHT, speed)
 
-# to move not turtle object pred        
-def pred_move(pred, output, step):
+# to move not turtle object pred with 5 outputs       
+def pred_move5(pred, outputs, step):
     x,y = pred.get_coords()
     pred.old_coords = pred.get_coords()
-    if 0.2 > output >= 0:
+    biggerOutput = outputs[0]
+    biggerOutputN = 0
+    for n in range(1, len(outputs)):
+        if outputs[n] > biggerOutput:
+            biggerOutput = outputs[n]
+            biggerOutputN = n
+    if biggerOutputN == 0:
         #print("predador não se moveu!")
         return
-    elif 0.4 > output >= 0.2:
+    elif biggerOutputN == 1:
         #print("predador move-se para este!")
         pred.set_coords(x+step, y)
-    elif 0.6 > output >= 0.4:
+    elif biggerOutputN == 2:
         #print("predador move-se para norte!")
         pred.set_coords(x, y+step)        
-    elif 0.8 > output >= 0.6:
+    elif biggerOutputN == 3:
         #print("predador move-se para oeste!")
         pred.set_coords(x-step, y)        
     else:
@@ -248,6 +271,7 @@ def pred_move(pred, output, step):
         pred.set_coords(x, y-step)
     new_coords = pred.get_coords()         
     x,y =toroidal_pos(new_coords, WIDTH, HEIGHT)
+    #print("pred x,y: ", x,y)
     pred.set_coords(x,y)
 
 
@@ -355,6 +379,31 @@ def ann_inputs_outputs(preds, prey, net):
     preds_coords = [p.get_coords() for p in preds]
     preyx, preyy = prey.get_coords()
     input_data = []
+    outputs= []
+    for x,y in preds_coords:
+        #print("\npredx: ", x, "preyx:", preyx)
+        #print("predy: ", y, "preyy:", preyy)
+        offsetx = toroidalDistance1coord(x, preyx, WIDTH)
+        offsety = toroidalDistance1coord(y, preyy, HEIGHT)
+        norm_offsetx = ((offsetx/ WIDTH) +1 )/2
+        norm_offsety = ((offsety/ HEIGHT) +1 )/2
+        #print("offsetx: ", offsetx, " ; norm_offsetx", norm_offsetx)
+        #print("offsety: ", offsety, " ; norm_offsety", norm_offsety)
+        input_data.append(norm_offsetx)
+        input_data.append(norm_offsety)
+    outputs = net.activate(input_data)
+    #print("outputs: ", outputs)
+    return outputs
+    #print("INPUTS!:", input_data1)
+    #for n in range(5):
+    #    outputs.append(net.activate(input_data))#random.shuffle(input_data)
+    #return outputs
+
+def ann_inputs_outputs_t(tpreds, tprey, net):
+    preds_coords = [p.position() for p in tpreds]
+    preyx, preyy = tprey.position()
+    input_data = []
+    outputs = []
     for x,y in preds_coords:
         #print("\npredx: ", x, "preyx:", preyx)
         #print("predy: ", y, "preyy:", preyy)
@@ -368,25 +417,6 @@ def ann_inputs_outputs(preds, prey, net):
         input_data.append(norm_offsety)
     #print("INPUTS!:", input_data1)
     return net.activate(input_data)
-
-def ann_inputs_outputs_t(tpreds, tprey, net):
-    preds_coords = [p.position() for p in tpreds]
-    preyx, preyy = tprey.position()
-    input_data = []
-    for x,y in preds_coords:
-        print("\npredx: ", x, "preyx:", preyx)
-        print("predy: ", y, "preyy:", preyy)
-        offsetx = toroidalDistance1coord(x, preyx, WIDTH)
-        offsety = toroidalDistance1coord(y, preyy, HEIGHT)
-        norm_offsetx = ((offsetx/ WIDTH) +1 )/2
-        norm_offsety = ((offsety/ HEIGHT) +1 )/2
-        print("offsetx: ", offsetx, " ; norm_offsetx", norm_offsetx)
-        print("offsety: ", offsety, " ; norm_offsety", norm_offsety)
-        input_data.append(norm_offsetx)
-        input_data.append(norm_offsety)
-    #print("INPUTS!:", input_data1)
-    return net.activate(input_data)
-
 
 #simula
 def simula(net, preds, preys, preys_test, height, width, ticks):
@@ -432,9 +462,17 @@ def simula1(net, preds, prey, height, width, ticks):
     for count in range(ticks):
         count +=1
         
-        outputs = ann_inputs_outputs_t(tpreds, tprey, net)
+        outputsbruto = ann_inputs_outputs_t(tpreds, tprey, net)
+        outputs = []
+        n=0
+        for n in range(0, (n_preds-1)*5 +1, 5):
+            outpred = outputsbruto[n:5+n]
+            outputs.append(outpred)
+        #print("outputs: ",outputs)
+        #input()
         for tpred, output in zip(tpreds, outputs):
-            tpred_move(tpred, output, STEP*2)
+            tpred_move5(tpred, output, STEP*2)
+            #print("pred new coords: ", pred.get_coords())
 
         #print("pred new coords: ", tpred.position())
         #To make the prey not move commented the method function to make it move
@@ -511,14 +549,20 @@ def eval_fitness1(net, preds_def, theprey, height, width, ticks):
     #for pred in preds:
         #print("pred pos: ", pred.get_coords())
     #print("prey pos:", prey.get_coords())
-    
+
     for count in range(ticks): #(500 * 2 / 10) * (3/2) = 150
         
-        outputs = ann_inputs_outputs(preds, prey, net)
+        outputsbruto = ann_inputs_outputs(preds, prey, net)
+        outputs = []
+        n=0
+        for n in range(0, (n_preds-1)*5 +1, 5):
+            outpred = outputsbruto[n:5+n]
+            outputs.append(outpred)
+        #print("outputs: ",outputs)
+        #input()
         for pred, output in zip(preds, outputs):
-            pred_move(pred, output, STEP*2)
+            pred_move5(pred, output, STEP*2)
             #print("pred new coords: ", pred.get_coords())
-
 
         #To make the prey not move commented the method function to make it move
         prey_move(prey, preds, STEP)
@@ -556,6 +600,7 @@ def eval_fitness1(net, preds_def, theprey, height, width, ticks):
 
 #the list of Preds to be used in in each avaliation
 PREDS_DEF = createpredators_bottom(HEIGHT, WIDTH, N_PREDS, STEP)
+PREDS_DEF2 = createpredators_right(HEIGHT, WIDTH, N_PREDS, STEP)
 #the list of Preys to be used in in evalfitness_1()
 PREYS_DEF = createPreys(HEIGHT, WIDTH, PREDS_DEF, STEP, N_EVALS)
 #the list of Preysc for testing to be used in each simulation1()
@@ -689,9 +734,13 @@ def nrunexperiment(n):
                 f.close()
 
             if i < n-1:
+                #timeout = 10
+                #t = Timer(timeout, print, "timeout!")
+                #t.start()
                 userinput = str(input("want to carry on with the program?:(y/n) "))
                 if userinput == "n":
                     break
+                #t.cancel()
     #keep the best genome of the n experimentations in a separate file
     best_genome_path = 'bestgenome.pkl'
     with open("bestgenome.pkl", "wb") as f:
