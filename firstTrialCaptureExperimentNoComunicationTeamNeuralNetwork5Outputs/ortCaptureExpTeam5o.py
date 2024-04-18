@@ -457,7 +457,7 @@ def simula1(net, preds, prey, height, width, ticks):
         #print("outputs: ",outputs)
         #input()
         for tpred, output in zip(tpreds, outputs):
-            tpred_move5(tpred, output, STEP*2)
+            tpred_move5(tpred, output, STEP)
             #print("pred new coords: ", pred.get_coords())
 
         #print("pred new coords: ", tpred.position())
@@ -547,7 +547,7 @@ def eval_fitness1(net, preds_def, theprey, height, width, ticks):
         #print("outputs: ",outputs)
         #input()
         for pred, output in zip(preds, outputs):
-            pred_move5(pred, output, STEP*2)
+            pred_move5(pred, output, STEP)
             #print("pred new coords: ", pred.get_coords())
 
         #To make the prey not move commented the method function to make it move
