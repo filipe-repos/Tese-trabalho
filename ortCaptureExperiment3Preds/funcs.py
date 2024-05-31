@@ -34,6 +34,10 @@ def createpredators_bottom(height, width, n, step):
 def createpredators_right(height, width, n, step):
     return [Agent((width - predx * step, height)) for predx in range(n)]
 
+def createpredators_edges(height, width, n, step):
+    pass
+
+
 def createPrey(height, width, preds, step):
     encontrei = False
     while True:
@@ -98,9 +102,9 @@ def toroidalDistance_coords( pos1, pos2, width, height):
     toroidal_dx = min(dx, ((width*2)-dx +1))
     toroidal_dy = min(dy, ((height*2)-dy+1))
     #euclidian distance
-    #return (toroidal_dx**2 + toroidal_dy**2)**0.5
+    return (toroidal_dx**2 + toroidal_dy**2)**0.5
     #manhatan distance for ortogonal env
-    return abs(toroidal_dx) + abs(toroidal_dy)
+    #return abs(toroidal_dx) + abs(toroidal_dy)
 
 #only to check and update position of agents according to toroidal environment, no visualization
 def toroidal_pos(pos, max_width, max_height):
@@ -201,7 +205,10 @@ def tprey_move(prey, tpreds, step):
             closestdistance = distance
             closestpred = tp
     #print("o predador mais próximo: ", closestpred.pos(), "cor: ", closestpred.color())
-            
+    #to make the prey move only when a predator is close enough to it 
+    if closestdistance > 10*STEP:
+        return
+    
     #para manter um registo da posição anterior
     prey.old_pos = prey.pos()
     xcoor,ycoor = prey.pos()
@@ -229,7 +236,7 @@ def tprey_move(prey, tpreds, step):
 #to move not turtle object prey 
 def prey_move(prey, preds, step):
     #calculating closest pred
-    closestdistance = toroidalDistance_coords(preds[0].old_coords, prey.get_coords(), WIDTH, HEIGHT)
+    closestdistance = toroidalDistance_coords(preds[0].old_coords, prey.get_coords(), WIDTH, HEIGHT) 
     closestpred = preds[0]
     for tp in preds[1:]:
         distance = toroidalDistance_coords(tp.old_coords, prey.get_coords(), WIDTH, HEIGHT)
@@ -237,7 +244,10 @@ def prey_move(prey, preds, step):
             closestdistance = distance
             closestpred = tp
     #print("o predador mais próximo: ", closestpred.pos(), "cor: ", closestpred.color())
-            
+    #to make the prey move only when a predator is close enough to it 
+    if closestdistance > 10*STEP:
+        return
+    
     #para manter um registo da posição anterior
     prey.old_coords = prey.get_coords()
     xcoor,ycoor = prey.get_coords()
@@ -327,7 +337,7 @@ def captura(preds, prey):
 
 def atravessaram(preds, prey):
     for p in preds:
-        if p.old_pos == prey.pos() or prey.old_pos == p.pos(): # previous was and
+        if p.old_pos == prey.pos() and prey.old_pos == p.pos(): # previous was and
             return True
     return False    
 
@@ -340,7 +350,7 @@ def captura_a(preds, prey):
 
 def atravessaram_a(preds, prey):
     for p in preds:
-        if p.get_old_coords() == prey.get_coords() or prey.get_old_coords() == p.get_coords(): # previous was and
+        if p.get_old_coords() == prey.get_coords() and prey.get_old_coords() == p.get_coords(): # previous was and
             return True
     return False
 
@@ -384,12 +394,10 @@ def ann_inputs_outputs_t_T(tpreds, tprey, net):
 #functions used when the neural networks uses no comunication and is homogeneous
 #preds_n to garantee different order of inputs for each predator neural network
 def ann_inputs_outputs_I(preds, preds_n, prey, net):
-    preds_copy = copy.deepcopy(preds)
-    preds_ordered = []
-    preds_ordered.append(preds_copy[preds_n])
-    del preds_copy[preds_n]
-    for pred in preds_copy:
-        preds_ordered.append(pred)
+    preds_ordered = copy.deepcopy(preds)
+    pred_to_order = preds_ordered[preds_n]
+    del preds_ordered[preds_n]
+    preds_ordered.insert(0, pred_to_order)
     
     preds_coords = [p.get_coords() for p in preds_ordered]
     preyx, preyy = prey.get_coords()
@@ -415,12 +423,11 @@ def ann_inputs_outputs_I(preds, preds_n, prey, net):
     #return outputs
 
 def ann_inputs_outputs_t_I(tpreds, tpred_n, tprey, net):
-    tpreds_copy = copy.copy(tpreds)
-    tpreds_ordered = []
-    tpreds_ordered.append(tpreds[tpred_n])
-    del tpreds_copy[tpred_n]
-    for tpred in tpreds_copy:
-        tpreds_ordered.append(tpred)
+    tpreds_ordered = copy.copy(tpreds)
+    tpred_to_order = tpreds_ordered[tpred_n]
+    del tpreds_ordered[tpred_n]
+    tpreds_ordered.insert(0, tpred_to_order)
+    
     preds_coords = [p.position() for p in tpreds_ordered]
     preyx, preyy = tprey.position()
     input_data = []
