@@ -423,10 +423,59 @@ def nrunexperiment(n, genomeloadfile = None):
                         config_path)
     net = neat.nn.FeedForwardNetwork.create(best_of_the_bestGenome, config)
     simula(net, PREDS_DEF, PREYS_9, PREYS_DEF, HEIGHT, WIDTH, TICKS)
-
     #print("simulate behavior of best genome on a new set of randomly placed preys to test the model")
     #simula(net, PREDS_DEF, PREYS_TEST, PREYS_DEF, HEIGHT, WIDTH, TICKS)
     #print("The END.")
 
-nrunexperiment(1)
+
+#nrunexperiment(1)
 #nrunexperiment(1, "storedgenomes\\goodgenomes_NoComInd1o.pkl")
+
+
+#loading checkpoint for continuation
+def runCheckpointExperiment(filename):
+
+    config_path = os.path.join(local_dir, 'exercise.ini')
+
+    restoredPopulation = neat.Checkpointer.restore_checkpoint(filename)
+
+    # Add a stdout reporter to show progress in the terminal.
+    restoredPopulation.add_reporter(neat.StdOutReporter(True))
+    stats = neat.StatisticsReporter()
+    restoredPopulation.add_reporter(stats)
+    restoredPopulation.add_reporter(neat.Checkpointer(5, filename_prefix=os.path.join(out_dir, 'neat-checkpoint-')))
+
+    best_genome = restoredPopulation.run(eval_genomes, 77)
+
+    # Display the best genome among generations.
+    print('\nBest genome:\n{!s}'.format(best_genome))
+
+    # Visualize the experiment results
+    node_names = {-1:'offx1', -2: 'offy1', -3: 'offx2', -4: 'offy2', -5: 'offx3', -6: 'offy3', -6: 'offx4', -7: 'offy4', 0:'Move_outputp'}
+    visualize.draw_net(restoredPopulation.config, best_genome, True, node_names=node_names, directory=out_dir)
+
+    visualize.plot_stats(stats, ylog=False, view=True, filename=os.path.join(out_dir, 'avg_fitness.svg'))
+
+    visualize.plot_species(stats, view=True, filename=os.path.join(out_dir, 'speciation.svg'))
+
+    #keep the best genome of the n experimentations in a separate file
+    best_genome_path = 'storedgenomes\\bestgenome_NoComInd1o.pkl'
+    with open("storedgenomes\\bestgenome_NoComInd1o.pkl", "wb") as f:
+            pickle.dump(best_genome, f)
+            f.close()
+
+    print("best_of_the_bestGenome.fitness", best_genome.fitness)
+    print("end of regular experimentation!")
+    print()
+
+    print("simulate behavior of best genome on the trained set:", best_genome)
+    config = neat.Config(neat.DefaultGenome, neat.DefaultReproduction,
+                        neat.DefaultSpeciesSet, neat.DefaultStagnation,
+                        config_path)
+    net = neat.nn.FeedForwardNetwork.create(best_genome, config)
+    simula(net, PREDS_DEF, PREYS_9, PREYS_DEF, HEIGHT, WIDTH, TICKS)
+
+
+
+checkpointfile = "out\\neat-checkpoint-133"
+runCheckpointExperiment(checkpointfile)
