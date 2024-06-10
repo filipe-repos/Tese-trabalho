@@ -297,7 +297,7 @@ def prey_newpos(prey, predadores, step):
     return x_tomove, y_tomove
 
 # to move turtle object pred with 5 outputs 
-def tpred_move5(tpred, outputs, speed):
+def tpred_newpos5(tpred, outputs, step):
     tpred.old_pos = tpred.pos()
     biggerOutput = outputs[0]
     biggerOutputN = 0
@@ -307,24 +307,25 @@ def tpred_move5(tpred, outputs, speed):
             biggerOutputN = n
     if biggerOutputN == 0:
         #print("predador não se moveu!")
-        return
+        to_move = (0,0)
     elif biggerOutputN == 1:
         #print("predador move-se para este!")
-        tpred.setheading(0)
+        to_move = (step,0)
     elif biggerOutputN == 2:
         #print("predador move-se para norte!")
-        tpred.setheading(90)        
+        to_move = (0,step)         
     elif biggerOutputN == 3:
         #print("predador move-se para oeste!")
-        tpred.setheading(180)        
+        to_move = (-step,0)        
     else:
         #print("predador move-se para sul!")
-        tpred.setheading(270)       
-    tpred.forward(speed)
-    toroidalcheck(tpred, WIDTH, HEIGHT, speed)
+        to_move = (0,-step)        
+    newpos = tuple(a + b for a, b in zip(tpred.pos(), to_move))
+    x,y = toroidal_pos(newpos, WIDTH, HEIGHT)     
+    return x,y
 
 # to move not turtle object pred with 5 outputs       
-def pred_move5(pred, outputs, step):
+def pred_newpos5(pred, outputs, step):
     x,y = pred.get_coords()
     pred.old_coords = pred.get_coords()
     biggerOutput = outputs[0]
@@ -335,23 +336,26 @@ def pred_move5(pred, outputs, step):
             biggerOutputN = n
     if biggerOutputN == 0:
         #print("predador não se moveu!")
-        return
+        to_move = (0,0)
     elif biggerOutputN == 1:
         #print("predador move-se para este!")
-        pred.set_coords(x+step, y)
+        #pred.set_coords(x+step, y)
+        to_move = (step,0)
     elif biggerOutputN == 2:
         #print("predador move-se para norte!")
-        pred.set_coords(x, y+step)        
+        #pred.set_coords(x, y+step)
+        to_move = (0,step)        
     elif biggerOutputN == 3:
         #print("predador move-se para oeste!")
-        pred.set_coords(x-step, y)        
+        #pred.set_coords(x-step, y)
+        to_move = (-step,0)        
     else:
         #print("predador move-se para sul!")
-        pred.set_coords(x, y-step)
-    new_coords = pred.get_coords()         
+        #pred.set_coords(x, y-step)
+        to_move = (0,-step)
+    new_coords = tuple(a + b for a, b in zip(pred.get_coords(), to_move))         
     x,y =toroidal_pos(new_coords, WIDTH, HEIGHT)
-    #print("pred x,y: ", x,y)
-    pred.set_coords(x,y)
+    return x,y 
 
 #captura: a presa é capturada quando estiver cercada a norte sul este e oeste por predadores
 def captura(preds, prey):

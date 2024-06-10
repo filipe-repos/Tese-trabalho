@@ -35,7 +35,7 @@ STEP = 7
 #N_Evals is the number of different evaluations(cases where prey is in different position) done per genome per generation
 N_EVALS = 1
 #N_PREDS is the number of predators to be present in experiment and to chase the prey
-N_PREDS = 3
+N_PREDS = 4
 #TICKS is the limit of turns allowed or movements to be done by all agents before the experiment ends
 TICKS = int(((HEIGHT*2) / STEP) * 1.5)
 
@@ -83,22 +83,27 @@ def simula1(net, preds, prey, height, width, ticks, cont):
     #while count <= ((HEIGHT*2) / STEP) * 1.5: #(500 * 2 / 10) * (3/2) = 150 (350 *2) /7)) *1.5
     for count in range(ticks):
         count +=1
-        
+        newagentpos = []
         outputs = ann_inputs_outputs_t_T(tpreds, tprey, net)
         for tpred, output in zip(tpreds, outputs):
-            tpred_move(tpred, output, STEP)
+            newagentpos.append((tpred,tpred_newpos(tpred, output, STEP)))
             #to move 2 times making it move twice as fast
             #tpred_move(tpred, output, STEP)
 
         #print("pred new coords: ", tpred.position())
         #To make the prey not move commented the method function to make it move
-        tprey_move(tprey, tpreds, STEP)
+        newagentpos.append((tprey,tprey_newpos(tprey,tpreds, STEP)))
         #new_tprey_move(tprey, tpreds, STEP)
+
+        newagentmovements = limpamovimentos_t(newagentpos)
+        #só se movem os agentes que não vão para a mesma casa nem que se atravessam
+        for agent, agentnewpos in newagentmovements:
+            agent_go(agent, agentnewpos, STEP)
 
         image = ImageGrab.grab(bbox=(10, 10, 10+com, 10+larg))
         frames.append(image)
 
-        if captura(tpreds, tprey):
+        if captura_t(tpreds, tprey):
             print("presa apanhada!!!")
 
             finaldists = [toroidalDistance_coords(tpred.position(), tprey.position(), HEIGHT, WIDTH) for pred in preds]
@@ -168,23 +173,32 @@ def eval_fitness1(net, preds_def, theprey, height, width, ticks):
     #print("prey pos:", prey.get_coords())
     
     for count in range(ticks): #(500 * 2 / 10) * (3/2) = 150
+        newagentpos = []
         outputs = ann_inputs_outputs_T(preds, prey, net)
         for pred, output in zip(preds, outputs):
-            pred_move(pred, output, STEP)
+            newagentpos.append((pred,pred_newpos(pred, output, STEP)))
             #to move 2 times making it move twice as fast
             #pred_move(pred, output, STEP)
             #print("pred new coords: ", pred.get_coords())
 
         #To make the prey not move commented the method function to make it move
-        prey_move(prey, preds, STEP)
+        newagentpos.append((prey, prey_newpos(prey, preds, STEP)))
         #new_prey_move(prey, preds, STEP)
+
+        #print("limpa movimentos")
+        newagentmovements = limpamovimentos(newagentpos)
+        #print("END limpa movimentos")
+        
+        #só se movem os agentes que não vão para a mesma casa nem que se atravessam
+        for agent, agentnewpos in newagentmovements:
+            agent.set_coords(agentnewpos[0], agentnewpos[1])
 
         #print("pred1_initialpos: ", pred1.get_initial_coords())
         #print("prey pos: ", prey.get_coords())
 
         #print("Media das distâncias ortogonais iniciais de todos os predadores à presa:", mediainidists)
         
-        if captura_a(preds, prey):#if dist1 <= 40 or dist2 <= 40 or dist3 <= 40 or dist4 <= 40:
+        if captura(preds, prey):#if dist1 <= 40 or dist2 <= 40 or dist3 <= 40 or dist4 <= 40:
 
             finaldists = [toroidalDistance_coords(pred.get_coords(), prey.get_coords(), height, width) for pred in preds]
             mediafinaldists = sum(finaldists) / n_preds
@@ -306,13 +320,13 @@ def run_experiment(config_file, genomeloadfile = None):
 
 
     # Run for up to 300 generations.
-    best_genome = p.run(eval_genomes, 400)#500
+    best_genome = p.run(eval_genomes, 500)#500
 
     # Display the best genome among generations.
     print('\nBest genome:\n{!s}'.format(best_genome))
 
     # Visualize the experiment results
-    node_names = {-1:'offx1', -2: 'offy1', -3: 'offx2', -4: 'offy2', -5: 'offx3', -6: 'offy3', 0:'Move_outputp1', 1:'Move_outputp2', 2:'Move_outputp3'}
+    node_names = {-1:'offx1', -2: 'offy1', -3: 'offx2', -4: 'offy2', -5: 'offx3', -6: 'offy3', -7: 'offx4', -8: 'offy4', 0:'Move_outputp1', 1:'Move_outputp2', 2:'Move_outputp3', 3:'Move_outputp4'}
     visualize.draw_net(config, best_genome, True, node_names=node_names, directory=out_dir)
     print("AQUI!!!")
     visualize.plot_stats(stats, ylog=False, view=True, filename=os.path.join(out_dir, 'avg_fitness.svg'))
@@ -404,5 +418,52 @@ def nrunexperiment(n, genomeloadfile = None):
     simula(net, PREDS_DEF, PREYS_9, PREYS_TEST, HEIGHT, WIDTH, TICKS)
     print("The END.")
 
-nrunexperiment(5)
+#nrunexperiment(1)
 #nrunexperiment(1, "storedgenomes\\goodgenomes_NoComTeam1o.pkl")
+
+#loading checkpoint for continuation
+def runCheckpointExperiment(filename):
+
+    config_path = os.path.join(local_dir, 'exercise.ini')
+
+    restoredPopulation = neat.Checkpointer.restore_checkpoint(filename)
+
+    # Add a stdout reporter to show progress in the terminal.
+    restoredPopulation.add_reporter(neat.StdOutReporter(True))
+    stats = neat.StatisticsReporter()
+    restoredPopulation.add_reporter(stats)
+    restoredPopulation.add_reporter(neat.Checkpointer(5, filename_prefix=os.path.join(out_dir, 'neat-checkpoint-')))
+
+    best_genome = restoredPopulation.run(eval_genomes, 1)
+
+    # Display the best genome among generations.
+    print('\nBest genome:\n{!s}'.format(best_genome))
+
+    # Visualize the experiment results
+    node_names = {-1:'offx1', -2: 'offy1', -3: 'offx2', -4: 'offy2', -5: 'offx3', -6: 'offy3', -7: 'offx4', -8: 'offy4', 0:'Move_outputp1', 1:'Move_outputp2', 2:'Move_outputp3', 3:'Move_outputp4'}
+    visualize.draw_net(restoredPopulation.config, best_genome, True, node_names=node_names, directory=out_dir)
+
+    visualize.plot_stats(stats, ylog=False, view=True, filename=os.path.join(out_dir, 'avg_fitness.svg'))
+
+    visualize.plot_species(stats, view=True, filename=os.path.join(out_dir, 'speciation.svg'))
+
+    #keep the best genome of the n experimentations in a separate file
+    best_genome_path = 'storedgenomes\\bestgenome_NoComTeam1o.pkl'
+    with open("storedgenomes\\bestgenome_NoComTeam1o.pkl", "wb") as f:
+            pickle.dump(best_genome, f)
+            f.close()
+
+    print("best_of_the_bestGenome.fitness", best_genome.fitness)
+    print("end of regular experimentation!")
+    print()
+
+    print("simulate behavior of best genome on the trained set:", best_genome)
+    config = neat.Config(neat.DefaultGenome, neat.DefaultReproduction,
+                        neat.DefaultSpeciesSet, neat.DefaultStagnation,
+                        config_path)
+    net = neat.nn.FeedForwardNetwork.create(best_genome, config)
+    simula(net, PREDS_DEF, PREYS_9, PREYS_DEF, HEIGHT, WIDTH, TICKS)
+
+
+checkpointfile = "out\\neat-checkpoint-499"
+runCheckpointExperiment(checkpointfile)
