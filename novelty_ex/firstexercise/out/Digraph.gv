@@ -1,0 +1,10 @@
+digraph {
+	node [fontsize=9 height=0.2 shape=circle width=0.2]
+	distanceToPrey1 [fillcolor=lightgray shape=box style=filled]
+	"signal2 input" [fillcolor=lightgray shape=box style=filled]
+	"Move output" [fillcolor=lightblue style=filled]
+	"signal1 output" [fillcolor=lightblue style=filled]
+	distanceToPrey1 -> "signal1 output" [color=red penwidth=0.3593445801602245 style=solid]
+	"signal2 input" -> "Move output" [color=green penwidth=0.31395153004821363 style=solid]
+	distanceToPrey1 -> "Move output" [color=green penwidth=0.5120339443165027 style=solid]
+}
