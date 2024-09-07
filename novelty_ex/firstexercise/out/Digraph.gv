@@ -4,7 +4,8 @@ digraph {
 	"signal2 input" [fillcolor=lightgray shape=box style=filled]
 	"Move output" [fillcolor=lightblue style=filled]
 	"signal1 output" [fillcolor=lightblue style=filled]
-	distanceToPrey1 -> "signal1 output" [color=red penwidth=0.3593445801602245 style=solid]
-	"signal2 input" -> "Move output" [color=green penwidth=0.31395153004821363 style=solid]
-	distanceToPrey1 -> "Move output" [color=green penwidth=0.5120339443165027 style=solid]
+	"signal2 input" -> "signal1 output" [color=red penwidth=0.2399567996947953 style=solid]
+	distanceToPrey1 -> "signal1 output" [color=red penwidth=0.2081320289598244 style=solid]
+	distanceToPrey1 -> "Move output" [color=green penwidth=0.12598544154942704 style=solid]
+	"signal2 input" -> "Move output" [color=green penwidth=0.27429229902902275 style=solid]
 }

@@ -21,6 +21,8 @@ import pickle
 from agents import Agent
 import turtle
 
+from collections import deque
+
 #importing all functions needed
 from funcs import *
 
@@ -38,6 +40,15 @@ N_EVALS = 1
 N_PREDS = 4
 #TICKS is the limit of turns allowed or movements to be done by all agents before the experiment ends
 TICKS = int(((HEIGHT*2) / STEP) * 1.5)
+# Define a global novelty archive
+NOVELTY_ARCHIVE = deque(maxlen=5000)  # Set a limit to the archive size
+FITNESS_THRESHOLD = 18
+
+#population amount
+POP_N = 500
+#generations amount
+MAX_N = 499
+GEN_N = 0 #contador usado no eval_genome()
 
 
 #simula
@@ -151,16 +162,20 @@ def simula1(net, preds, prey, height, width, ticks, cont):
 #calculo da média dos fitness das várias avaliações de cada rede neuronal numa lista de preys
 def eval_fitness(net, preds_def, preys_def, height, width, ticks):
     the_fitness= 0
+    behaviours = []
+    #the_behaviour = (0,0)
     #cycle_count = 0
     #print([p.get_coords() for p in preys_def])
     for prey in preys_def:
         #cycle_count += 1
         #print("CYCLE:", cycle_count)
-        f1 = eval_fitness1(net, preds_def, prey, height, width, ticks)
+        f1, behaviour = eval_fitness1(net, preds_def, prey, height, width, ticks)
+        behaviours.append(behaviour)
         #print("eval1", f1)
         the_fitness += f1
+        #the_behaviour += behaviour
     #print("the summed fitness:", the_fitness, "the number of experiments per genome:", len(preys_def))
-    return the_fitness/ len(preys_def)
+    return the_fitness/ len(preys_def), behaviours
 
 
 #Urgent to change 
@@ -228,27 +243,29 @@ def eval_fitness1(net, preds_def, theprey, height, width, ticks):
             #print("presa: ", prey.get_coords())
             print()
             print("fitness:", (2*(width + height) - mediafinaldists)/ (10*STEP))
-            return ((2*(width + height) - mediafinaldists)/ (10*STEP)) # max threshold is 160 ((1600 - 0) / 10)
+            the_behaviour = [pred.get_coords() for pred in preds]
+            #the_behaviour = tuple(finaldists)
+            return ((2*(width + height) - mediafinaldists)/ (10*STEP)), the_behaviour # max threshold is 160 ((1600 - 0) / 10)
 
     #new code to avoid bad genomes or neural networks that make preds only move in one direction the whole time or all preds move same direction the whole time
-    predsposx = []
-    predsposy = []
-    onedirectionpreds = []
-    for pred in preds:
-        x,y = pred.get_coords()
-        x_initial, y_initial = pred.initial_coords
-        predsposx.append(x)
-        predsposy.append(y)
-        if x == x_initial or y == y_initial:
-            onedirectionpreds.append(True)
-        else:
-            onedirectionpreds.append(False)
-    equalsx = all(i == predsposx[0] for i in predsposx)
-    equalsy = all(i == predsposy[0] for i in predsposy)
-    if all(i == True for i in onedirectionpreds):
-        return 1 #bad fitness if all preds only moved in one direction during evolution
-    if equalsx or equalsy:
-        return 1 #bad fitness if not capture and pos of preds in x or y are equal
+    #predsposx = []
+    #predsposy = []
+    #onedirectionpreds = []
+    #for pred in preds:
+    #    x,y = pred.get_coords()
+    #    x_initial, y_initial = pred.initial_coords
+    #    predsposx.append(x)
+    #    predsposy.append(y)
+    #    if x == x_initial or y == y_initial:
+    #        onedirectionpreds.append(True)
+    #    else:
+    #        onedirectionpreds.append(False)
+    #equalsx = all(i == predsposx[0] for i in predsposx)
+    #equalsy = all(i == predsposy[0] for i in predsposy)
+    #if all(i == True for i in onedirectionpreds):
+    #    return 1 #bad fitness if all preds only moved in one direction during evolution
+    #if equalsx or equalsy:
+    #    return 1 #bad fitness if not capture and pos of preds in x or y are equal
 
     inidists = [toroidalDistance_coords(pred.get_initial_coords(), prey.get_coords(), height, width) for pred in preds]
     mediainidists = sum(inidists) / n_preds
@@ -257,7 +274,10 @@ def eval_fitness1(net, preds_def, theprey, height, width, ticks):
     mediafinaldists = sum(finaldists) / n_preds
     #print("fitness:",1/(dist1 + dist2 + dist3 + dist4))
     #print("fitness:", (mediainidists - mediafinaldists) / 10)
-    return (mediainidists - mediafinaldists) / (10*STEP)
+    the_behaviour = [pred.get_coords() for pred in preds]
+    #print("the_behaviour", the_behaviour)
+    #the_behaviour = tuple(finaldists)
+    return (mediainidists - mediafinaldists) / (10*STEP), the_behaviour
 
 
 # more constants
@@ -293,13 +313,41 @@ def eval_genomes(genomes, config):
         config: The configuration settings with algorithm
                 hyper-parameters
     """
-    genome_count = 0
+    global GEN_N
+    print("GEN_N", GEN_N)
+    #genome_count = 0
     for genome_id, genome in genomes:
-        genome_count += 1
+        #genome_count += 1
         #print("\nGENOME COUNT", genome_count )
         genome.fitness = 0.0
         net = neat.nn.FeedForwardNetwork.create(genome, config)
-        genome.fitness = eval_fitness(net, PREDS_DEF, PREYS_9, HEIGHT, WIDTH, TICKS)
+        fitness_result, the_behaviour = eval_fitness(net, PREDS_DEF, PREYS_9, HEIGHT, WIDTH, TICKS)
+        novelty_score = calculate_novelty(the_behaviour, NOVELTY_ARCHIVE, DIST)
+        #print("fitness score:", fitness_result)
+        #print("NOVELTY SCORE:", novelty_score)
+        
+        if novelty_score >= FITNESS_THRESHOLD:
+            novelty_score = 17.9
+
+        # Add behavior to the archive if it is sufficiently novel
+        threshold = 0.1  # Adjust this threshold as needed
+        if novelty_score >= threshold:
+            NOVELTY_ARCHIVE.append(the_behaviour)
+
+        if fitness_result >= 17 or GEN_N == MAX_N: # or genome_count == POP_N - 1: supposed to be for selecting the fitness score of the last generation instead of novelty when reaching the end of the experiment without the solution
+            #print("solution found, fitness used!\n")
+            genome.fitness = fitness_result
+        #elif GEN_N == MAX_N - 1:
+        #    genome.fitness = fitness_result
+        else:
+            #print("solution not found, novelty score used for selection!\n")
+            genome.fitness = novelty_score
+    GEN_N +=1
+
+# Wrapper function to include generation tracking
+def eval_genomes_with_generation(genomes, config, generation):  
+    # Access the current generation from the population
+    eval_genomes(genomes, config, generation)
 
 def run_experiment(config_file, genomeloadfile = None):
     """
@@ -341,8 +389,8 @@ def run_experiment(config_file, genomeloadfile = None):
     p.add_reporter(stats)
     p.add_reporter(neat.Checkpointer(5, filename_prefix=os.path.join(out_dir, 'neat-checkpoint-')))
 
-
-    # Run for up to 300 generations.
+    #print("p.generation", p.generation)
+    # Run for up to 500 generations.
     best_genome = p.run(eval_genomes, 500)#500
 
     # Display the best genome among generations.
@@ -443,9 +491,57 @@ def nrunexperiment(n, genomeloadfile = None):
     print("The END.")
 
 
-nrunexperiment(1)
+#nrunexperiment(1)
 
-#nrunexperiment(1, "storedgenomes\\goodgenomes_SignalInd.pkl")
+
+#loading checkpoint for continuation
+def runCheckpointExperiment(filename):
+
+    config_path = os.path.join(local_dir, 'exercise.ini')
+
+    restoredPopulation = neat.Checkpointer.restore_checkpoint(filename)
+
+    # Add a stdout reporter to show progress in the terminal.
+    restoredPopulation.add_reporter(neat.StdOutReporter(True))
+    stats = neat.StatisticsReporter()
+    restoredPopulation.add_reporter(stats)
+    restoredPopulation.add_reporter(neat.Checkpointer(5, filename_prefix=os.path.join(out_dir, 'neat-checkpoint-')))
+
+    best_genome = restoredPopulation.run(eval_genomes, 906)
+
+    # Display the best genome among generations.
+    print('\nBest genome:\n{!s}'.format(best_genome))
+
+    # Visualize the experiment results
+    node_names = {-1:'offx1', -2: 'offy1', -3: 'offx2', -4: 'offy2', -5: 'offx3', -6: 'offy3', -7: 'offx4', -8: 'offy4', 0:'Move_outputp1', 1:'Move_outputp2', 2:'Move_outputp3', 3:'Move_outputp4'}
+    visualize.draw_net(restoredPopulation.config, best_genome, True, node_names=node_names, directory=out_dir)
+
+    visualize.plot_stats(stats, ylog=False, view=True, filename=os.path.join(out_dir, 'avg_fitness.svg'))
+
+    visualize.plot_species(stats, view=True, filename=os.path.join(out_dir, 'speciation.svg'))
+
+    #keep the best genome of the n experimentations in a separate file
+    best_genome_path = 'storedgenomes\\bestgenome_NoComTeam1o.pkl'
+    with open("storedgenomes\\bestgenome_NoComTeam1o.pkl", "wb") as f:
+            pickle.dump(best_genome, f)
+            f.close()
+
+    print("best_of_the_bestGenome.fitness", best_genome.fitness)
+    print("end of regular experimentation!")
+    print()
+
+    print("simulate behavior of best genome on the trained set:", best_genome)
+    config = neat.Config(neat.DefaultGenome, neat.DefaultReproduction,
+                        neat.DefaultSpeciesSet, neat.DefaultStagnation,
+                        config_path)
+    net = neat.nn.FeedForwardNetwork.create(best_genome, config)
+    simula(net, PREDS_DEF, PREYS_9, PREYS_DEF, HEIGHT, WIDTH, TICKS)
+
+
+#checkpointfile = "out\\neat-checkpoint-94"
+#runCheckpointExperiment(checkpointfile)
+
+nrunexperiment(1, "storedgenomes\\goodgenomes_SignalInd.pkl")
 
 
 #Pred1 = PREDS_captura[0]

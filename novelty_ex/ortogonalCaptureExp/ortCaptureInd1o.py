@@ -18,6 +18,8 @@ from PIL import Image, ImageGrab
 import pygetwindow as gw
 import pickle
 
+from collections import deque
+
 from agents import Agent
 import turtle
 
@@ -38,6 +40,10 @@ N_EVALS = 1
 N_PREDS = 3
 #TICKS is the limit of turns allowed or movements to be done by all agents before the experiment ends
 TICKS = int(((HEIGHT*2) / STEP) * 1.5)
+# Define a global novelty archive
+NOVELTY_ARCHIVE = deque(maxlen=500)  # Set a limit to the archive size
+
+FITNESS_THRESHOLD = 18
 
 
 #simula
@@ -139,16 +145,20 @@ def simula1(net, preds_def, prey, height, width, ticks, cont):
 #calculo da média dos fitness das várias avaliações de cada rede neuronal numa lista de preys
 def eval_fitness(net, preds_def, preys_def, height, width, ticks):
     the_fitness= 0
+    behaviours = []
+    the_behaviour = (0,0)
     #cycle_count = 0
     #print([p.get_coords() for p in preys_def])
     for prey in preys_def:
         #cycle_count += 1
         #print("CYCLE:", cycle_count)
-        f1 = eval_fitness1(net, preds_def, prey, height, width, ticks)
+        f1, behaviour = eval_fitness1(net, preds_def, prey, height, width, ticks)
+        behaviours.append(behaviour)
         #print("eval1", f1)
         the_fitness += f1
+        the_behaviour += behaviour
     #print("the summed fitness:", the_fitness, "the number of experiments per genome:", len(preys_def))
-    return the_fitness/ len(preys_def)
+    return the_fitness/ len(preys_def), behaviours
 
 
 #Urgent to change 
@@ -200,7 +210,8 @@ def eval_fitness1(net, preds_def, theprey, height, width, ticks):
             #print("presa: ", prey.get_coords())
             print()
             print("fitness:", (2*(width + height) - mediafinaldists)/ (10*STEP))
-            return ((2*(width + height) - mediafinaldists)/ (10*STEP)) # max threshold is 140 ((1400 - 0) / 10)
+            the_behaviour = tuple(finaldists)
+            return ((2*(width + height) - mediafinaldists)/ (10*STEP)), the_behaviour # max threshold is 140 ((1400 - 0) / 10)
 
     #new code to avoid bad genomes or neural networks that make preds only move in one direction the whole time or all preds move same direction the whole time
     #predsposx = []
@@ -229,7 +240,8 @@ def eval_fitness1(net, preds_def, theprey, height, width, ticks):
     mediafinaldists = sum(finaldists) / n_preds
     #print("fitness:",1/(dist1 + dist2 + dist3 + dist4))
     #print("fitness:", (mediainidists - mediafinaldists) / 10)
-    return (mediainidists - mediafinaldists) / (10*STEP)
+    the_behaviour = tuple(finaldists)
+    return (mediainidists - mediafinaldists) / (10*STEP), the_behaviour
 
 
 # more constants
@@ -268,7 +280,25 @@ def eval_genomes(genomes, config):
         #print("\nGENOME COUNT", genome_count )
         genome.fitness = 0.0
         net = neat.nn.FeedForwardNetwork.create(genome, config)
-        genome.fitness = eval_fitness(net, PREDS_DEF, PREYS_9, HEIGHT, WIDTH, TICKS)
+        fitness_result, the_behaviour = eval_fitness(net, PREDS_DEF, PREYS_9, HEIGHT, WIDTH, TICKS)
+        novelty_score = calculate_novelty(the_behaviour, NOVELTY_ARCHIVE, DIST)
+        #print("fitness score:", fitness_result)
+        #print("NOVELTY SCORE:", novelty_score)
+        
+        if novelty_score >= FITNESS_THRESHOLD:
+            novelty_score = 17.9
+
+        # Add behavior to the archive if it is sufficiently novel
+        threshold = 0.1  # Adjust this threshold as needed
+        if novelty_score >= threshold:
+            NOVELTY_ARCHIVE.append(the_behaviour)
+
+        if fitness_result == 1:
+            #print("solution found, fitness used!\n")
+            genome.fitness = fitness_result
+        else:
+            #print("solution not found, novelty score used for selection!\n")
+            genome.fitness = novelty_score
 
 def run_experiment(config_file, genomeloadfile = None):
     """

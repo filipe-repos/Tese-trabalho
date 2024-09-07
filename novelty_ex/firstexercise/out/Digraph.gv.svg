@@ -11,8 +11,8 @@
 <!-- distanceToPrey1 -->
 <g id="node1" class="node">
 <title>distanceToPrey1</title>
-<polygon fill="lightgray" stroke="black" points="179.34,-148.75 104.34,-148.75 104.34,-130.75 179.34,-130.75 179.34,-148.75"/>
-<text text-anchor="middle" x="141.84" y="-137.55" font-family="Times New Roman,serif" font-size="9.00">distanceToPrey1</text>
+<polygon fill="lightgray" stroke="black" points="92.34,-148.75 17.34,-148.75 17.34,-130.75 92.34,-130.75 92.34,-148.75"/>
+<text text-anchor="middle" x="54.84" y="-137.55" font-family="Times New Roman,serif" font-size="9.00">distanceToPrey1</text>
 </g>
 <!-- Move output -->
 <g id="node3" class="node">
@@ -23,8 +23,8 @@
 <!-- distanceToPrey1&#45;&gt;Move output -->
 <g id="edge3" class="edge">
 <title>distanceToPrey1&#45;&gt;Move output</title>
-<path fill="none" stroke="green" stroke-width="0.51" d="M133.14,-130.73C121.99,-120.45 101.91,-101.93 83.61,-85.06"/>
-<polygon fill="green" stroke="green" stroke-width="0.51" points="85.64,-82.16 75.91,-77.95 80.89,-87.31 85.64,-82.16"/>
+<path fill="none" stroke="green" stroke-width="0.13" d="M53.86,-130.73C53.01,-123.72 51.69,-112.86 50.28,-101.31"/>
+<polygon fill="green" stroke="green" stroke-width="0.13" points="53.72,-100.57 49.04,-91.06 46.77,-101.41 53.72,-100.57"/>
 </g>
 <!-- signal1 output -->
 <g id="node4" class="node">
@@ -33,22 +33,28 @@
 <text text-anchor="middle" x="152.84" y="-45.18" font-family="Times New Roman,serif" font-size="9.00">signal1 output</text>
 </g>
 <!-- distanceToPrey1&#45;&gt;signal1 output -->
-<g id="edge1" class="edge">
+<g id="edge2" class="edge">
 <title>distanceToPrey1&#45;&gt;signal1 output</title>
-<path fill="none" stroke="red" stroke-width="0.36" d="M142.82,-130.73C143.59,-124.38 144.75,-114.89 146,-104.58"/>
-<polygon fill="red" stroke="red" stroke-width="0.36" points="149.49,-104.87 147.22,-94.52 142.54,-104.03 149.49,-104.87"/>
+<path fill="none" stroke="red" stroke-width="0.21" d="M63.54,-130.73C74.19,-120.9 93.01,-103.55 110.63,-87.3"/>
+<polygon fill="red" stroke="red" stroke-width="0.21" points="113.11,-89.78 118.09,-80.43 108.36,-84.63 113.11,-89.78"/>
 </g>
 <!-- signal2 input -->
 <g id="node2" class="node">
 <title>signal2 input</title>
-<polygon fill="lightgray" stroke="black" points="74.84,-148.75 12.84,-148.75 12.84,-130.75 74.84,-130.75 74.84,-148.75"/>
-<text text-anchor="middle" x="43.84" y="-137.55" font-family="Times New Roman,serif" font-size="9.00">signal2 input</text>
+<polygon fill="lightgray" stroke="black" points="177.84,-148.75 115.84,-148.75 115.84,-130.75 177.84,-130.75 177.84,-148.75"/>
+<text text-anchor="middle" x="146.84" y="-137.55" font-family="Times New Roman,serif" font-size="9.00">signal2 input</text>
 </g>
 <!-- signal2 input&#45;&gt;Move output -->
-<g id="edge2" class="edge">
+<g id="edge4" class="edge">
 <title>signal2 input&#45;&gt;Move output</title>
-<path fill="none" stroke="green" stroke-width="0.31" d="M43.84,-130.73C43.84,-123.78 43.84,-113.07 43.84,-101.64"/>
-<polygon fill="green" stroke="green" stroke-width="0.31" points="47.34,-101.5 43.84,-91.5 40.34,-101.5 47.34,-101.5"/>
+<path fill="none" stroke="green" stroke-width="0.27" d="M137.7,-130.73C125.7,-120.21 103.87,-101.05 84.28,-83.86"/>
+<polygon fill="green" stroke="green" stroke-width="0.27" points="86.45,-81.1 76.62,-77.14 81.83,-86.36 86.45,-81.1"/>
+</g>
+<!-- signal2 input&#45;&gt;signal1 output -->
+<g id="edge1" class="edge">
+<title>signal2 input&#45;&gt;signal1 output</title>
+<path fill="none" stroke="red" stroke-width="0.24" d="M147.37,-130.73C147.79,-124.51 148.4,-115.28 149.07,-105.21"/>
+<polygon fill="red" stroke="red" stroke-width="0.24" points="152.58,-105.16 149.75,-94.95 145.59,-104.7 152.58,-105.16"/>
 </g>
 </g>
 </svg>

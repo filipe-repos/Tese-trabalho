@@ -590,6 +590,16 @@ def ann_inputs_outputs_signal_t_T(tpreds, signals, tprey, net):
     outputs, signals = tuple(net.activate(input_data))
     return outputs, signals
 
+#novelty
+def calculate_novelty(behavior, archive, dim):
+    # Calculate novelty as the average distance to the k-nearest neighbors in the archive
+    k = min(10, len(archive))  # Use up to 10 neighbors
+    if k == 0:
+        return float('0.1')  # 0.1 novelty if archive is empty
+
+    distances = sorted([np.linalg.norm(np.array(behavior) - np.array(b)) for b in archive])
+    novelty_score = np.mean(distances[:k])/(dim*2)
+    return novelty_score
 
 
 #######################################################################################################################################################################################
