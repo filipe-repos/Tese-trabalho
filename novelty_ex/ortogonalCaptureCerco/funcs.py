@@ -591,16 +591,33 @@ def ann_inputs_outputs_signal_t_T(tpreds, signals, tprey, net):
     return outputs, signals
 
 #novelty
-def calculate_novelty(behavior, archive, dim):
+def calculate_novelty(behavior, archive, dim, threshold):
     # Calculate novelty as the average distance to the k-nearest neighbors in the archive
     k = min(10, len(archive))  # Use up to 10 neighbors
     if k == 0:
-        return float('0.1')  # 0.1 novelty if archive is empty
+        return float(threshold)  # 0.1 novelty if archive is empty
 
     distances = sorted([np.linalg.norm(np.array(behavior) - np.array(b)) for b in archive])
     novelty_score = np.mean(distances[:k])/(dim*2)
     return novelty_score
 
+def load(file):
+    """
+    The function to load records list from the specied file into this class.
+    Arguments:
+        file: The path to the file to read agents records from.
+    """
+    with open(file, 'rb') as dump_file:
+        return pickle.load(dump_file)
+
+def dump(record, file):
+    """
+    The function to dump records list to the specified file from this class.
+    Arguments:
+        file: The path to the file to hold data dump.
+    """
+    with open(file, 'wb') as dump_file:
+        pickle.dump(record, dump_file)
 
 #######################################################################################################################################################################################
 
