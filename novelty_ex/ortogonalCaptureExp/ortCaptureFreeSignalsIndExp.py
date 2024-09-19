@@ -182,7 +182,7 @@ def eval_fitness1(net, preds_def, theprey, height, width, ticks):
         fit organism. Maximal score: 16.0
     """
     the_fitness = 0.0
-
+    #the_behaviour = []
     preds = copy.deepcopy(preds_def)
     prey = copy.deepcopy(theprey)
     n_preds = len(preds)
@@ -213,6 +213,9 @@ def eval_fitness1(net, preds_def, theprey, height, width, ticks):
 
         #print("Media das distâncias ortogonais iniciais de todos os predadores à presa:", mediainidists)
         
+        #add instance of behaviour when experience is at half
+        #if count == ticks /2:
+        #    the_behaviour.append([pred.get_coords() for pred in preds])
 
         if captura_a(preds, prey):#if dist1 <= 40 or dist2 <= 40 or dist3 <= 40 or dist4 <= 40:
 
@@ -227,6 +230,7 @@ def eval_fitness1(net, preds_def, theprey, height, width, ticks):
             print()
             #the_behaviour = tuple(finaldists)
             the_behaviour = [pred.get_coords() for pred in preds]
+            #the_behaviour.append([pred.get_coords() for pred in preds])
             return ((2*(width + height) - mediafinaldists)/ (10*STEP)), the_behaviour # max threshold is 160 ((1600 - 0) / 10)
         
 
@@ -259,6 +263,7 @@ def eval_fitness1(net, preds_def, theprey, height, width, ticks):
     #print("fitness:", (mediainidists - mediafinaldists) / 10)
     #the_behaviour = tuple(finaldists)
     the_behaviour = [pred.get_coords() for pred in preds]
+    #the_behaviour.append([pred.get_coords() for pred in preds])
     return (mediainidists - mediafinaldists) / (10*STEP), the_behaviour
 
 
@@ -471,6 +476,7 @@ def run_experiment(config_file, genomeloadfile = None):
 
     # Run for up to 300 generations.
     best_genome = p.run(eval_genomes, MAX_N)#500
+    di_best=p.reporters.reporters[0].best_genome()
 
     # Display the best genome among generations.
     print('\nBest genome:\n{!s}'.format(best_genome))
@@ -621,8 +627,8 @@ def runCheckpointExperiment(filename, check_n):
 ### RUNNING END #################################################
 
 
-#nrunexperiment(1)
+nrunexperiment(1)
 #nrunexperiment(1, "storedgenomes\\goodgenomes_SignalInd.pkl")
 
-checkpointfile = "out\\neat-checkpoint-24"
-runCheckpointExperiment(checkpointfile, 24)
+#checkpointfile = "out\\neat-checkpoint-458"
+#runCheckpointExperiment(checkpointfile, 458)

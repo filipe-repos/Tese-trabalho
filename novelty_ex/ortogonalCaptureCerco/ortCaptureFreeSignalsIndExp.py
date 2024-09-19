@@ -645,11 +645,11 @@ def runCheckpointExperiment(filename, check_n):
 
 ### RUNNING END #################################################
 
-nrunexperiment(1)
+#nrunexperiment(1)
 #nrunexperiment(1, "storedgenomes\\goodgenomes_SignalInd.pkl")
 
-#checkpointfile = "out\\neat-checkpoint-410"
-#runCheckpointExperiment(checkpointfile, 410)
+checkpointfile = "out\\neat-checkpoint-134"
+runCheckpointExperiment(checkpointfile, 134)
 
 
 ##################################################################################################################################################################
