@@ -45,6 +45,7 @@ NOVELTY_ARCHIVE = deque(maxlen=500)  # Set a limit to the archive size
 FITNESS_THRESHOLD = 18
 NOVELTY_THRESHOLD = 3
 NOVELTY_THRESHOLD_TIMEOUT = 0
+BEST_FITNESS_SCORE = [None ,-1, -1]
 
 #population amount
 POP_N = 500
@@ -110,7 +111,7 @@ def simula1(net, preds, prey, height, width, ticks, cont):
 
         #print("pred new coords: ", tpred.position())
         #To make the prey not move commented the method function to make it move
-        #tprey_move(tprey, tpreds, STEP)
+        tprey_move(tprey, tpreds, STEP)
 
         #to delete just to test something
         #print("prey pos:", tprey.pos())
@@ -206,7 +207,7 @@ def eval_fitness1(net, preds_def, theprey, height, width, ticks):
             #pred_move(pred, output, STEP)
 
         #To make the prey not move commented the method function to make it move
-        #prey_move(prey, preds, STEP)
+        prey_move(prey, preds, STEP)
 
         #print("pred1_initialpos: ", pred1.get_initial_coords())
         #print("prey pos: ", prey.get_coords())
@@ -262,8 +263,9 @@ def eval_fitness1(net, preds_def, theprey, height, width, ticks):
     #print("fitness:",1/(dist1 + dist2 + dist3 + dist4))
     #print("fitness:", (mediainidists - mediafinaldists) / 10)
     #the_behaviour = tuple(finaldists)
-    the_behaviour = [pred.get_coords() for pred in preds]
-    #the_behaviour.append([pred.get_coords() for pred in preds])
+    the_behaviour = sorted([toroidalDistance_signal(prey.get_coords(), pred.get_coords(), DIST) for pred in preds])
+    #the_behaviour2 = [y for x in the_behaviour for y in x]
+    #print("the_real_behaviour", the_behaviour)
     return (mediainidists - mediafinaldists) / (10*STEP), the_behaviour
 
 
@@ -280,8 +282,9 @@ local_dir = os.path.dirname(__file__)
 # The directory to store outputs
 out_dir = os.path.join(local_dir, 'out')
 
+###### eval genomes ####################
 
-def eval_genomes(genomes, config):
+def eval_genomes_a(genomes, config):
     """
     The function to evaluate the fitness of each genome in 
     the genomes list. 
@@ -300,7 +303,7 @@ def eval_genomes(genomes, config):
     #genome_count = 0
     global GEN_N
     print("GEN_N", GEN_N, "\n")
-
+    global BEST_FITNESS_SCORE
     global NOVELTY_THRESHOLD  # Adjust this threshold as needed
     global NOVELTY_THRESHOLD_TIMEOUT
 
@@ -312,7 +315,85 @@ def eval_genomes(genomes, config):
         genome.fitness = 0.0
         net = neat.nn.FeedForwardNetwork.create(genome, config)
         fitness_result, the_behaviour = eval_fitness(net, PREDS_DEF, PREYS_9, HEIGHT, WIDTH, TICKS)
-        novelty_score = calculate_novelty(the_behaviour, NOVELTY_ARCHIVE, DIST, NOVELTY_THRESHOLD)
+        novelty_score = calculate_novelty(the_behaviour, DIST, NOVELTY_THRESHOLD, NOVELTY_ARCHIVE, None)
+        #print("fitness score:", fitness_result)
+        #print("NOVELTY SCORE:", novelty_score)
+        
+        #avoid false solution trigger from novelty
+        if novelty_score >= FITNESS_THRESHOLD:
+            novelty_score = FITNESS_THRESHOLD -1 
+
+        # Add behavior to the archive if it is sufficiently novel
+        if novelty_score >= NOVELTY_THRESHOLD:
+            NOVELTY_ARCHIVE.append(the_behaviour)
+            dump(NOVELTY_ARCHIVE, "out\\novelty_archive.pkl")
+            genome_added_n += 1
+
+        if fitness_result >= FITNESS_THRESHOLD or GEN_N == MAX_N-1:# or fitness_result > novelty_score: # or genome_count == POP_N - 1: supposed to be for selecting the fitness score of the last generation instead of novelty when reaching the end of the experiment without the solution
+            #print("solution found, fitness used!\n")
+            genome.fitness = fitness_result
+        #elif genome_count == GEN_N - 1:
+        #    genome.fitness = fitness_result
+        else:
+            #print("solution not found, novelty score used for selection!\n")
+            genome.fitness = novelty_score
+        #keep record of best fitness result in current generation
+        if fitness_result > best_generation_fitness[1]:
+            best_generation_fitness = (genome_id, fitness_result)
+        if fitness_result > BEST_FITNESS_SCORE[2]:
+            BEST_FITNESS_SCORE = (genome ,genome_id, fitness_result)
+
+    print("best genome so far: ", BEST_FITNESS_SCORE[1:])
+    print("this generation best fitness result:(genome_id, fitness_result)", best_generation_fitness)
+    print("genomes' behaviours added to novelty archive: ",genome_added_n)
+    if genome_added_n == 0:
+        NOVELTY_THRESHOLD_TIMEOUT += 1
+    else:
+        NOVELTY_THRESHOLD_TIMEOUT = 0
+
+    if NOVELTY_THRESHOLD_TIMEOUT >= 2:
+        NOVELTY_THRESHOLD *= 0.9
+        print("NOVELTY THRESHOLD REDUCED")
+    if genome_added_n >=4:
+        NOVELTY_THRESHOLD *= 1.2
+        print("NOVELTY THRESHOLD INCREASED")
+    print("NOVELTY_THRESHOLD: ", NOVELTY_THRESHOLD, "\n")    
+    GEN_N +=1
+
+
+def eval_genomes_ag(genomes, config):
+    """
+    The function to evaluate the fitness of each genome in 
+    the genomes list. 
+    The provided configuration is used to create feed-forward 
+    neural network from each genome and after that created
+    the neural network evaluated in its ability to solve
+    PREY_PREDATOR problem. As a result of this function execution, the
+    the fitness score of each genome updated to the newly
+    evaluated one.
+    Arguments:
+        genomes: The list of genomes from population in the 
+                current generation
+        config: The configuration settings with algorithm
+                hyper-parameters
+    """
+    #genome_count = 0
+    global GEN_N
+    print("GEN_N", GEN_N, "\n")
+    global BEST_FITNESS_SCORE
+    global NOVELTY_THRESHOLD  # Adjust this threshold as needed
+    global NOVELTY_THRESHOLD_TIMEOUT
+    gen_behaviours = deque(maxlen=500)
+    genome_added_n = 0
+    best_generation_fitness = (0, 0)
+    for genome_id, genome in genomes:
+        #genome_count += 1
+        #print("\nGENOME COUNT", genome_count )
+        genome.fitness = 0.0
+        net = neat.nn.FeedForwardNetwork.create(genome, config)
+        fitness_result, the_behaviour = eval_fitness(net, PREDS_DEF, PREYS_9, HEIGHT, WIDTH, TICKS)
+        novelty_score = calculate_novelty(the_behaviour, DIST, NOVELTY_THRESHOLD, NOVELTY_ARCHIVE, gen_behaviours)
+        gen_behaviours.append(the_behaviour)
         #print("fitness score:", fitness_result)
         #print("NOVELTY SCORE:", novelty_score)
         
@@ -327,7 +408,7 @@ def eval_genomes(genomes, config):
             genome_added_n += 1
 
 
-        if fitness_result >= FITNESS_THRESHOLD or GEN_N == MAX_N or fitness_result > novelty_score: # or genome_count == POP_N - 1: supposed to be for selecting the fitness score of the last generation instead of novelty when reaching the end of the experiment without the solution
+        if fitness_result >= FITNESS_THRESHOLD or GEN_N == MAX_N-1:# or fitness_result > novelty_score: # or genome_count == POP_N - 1: supposed to be for selecting the fitness score of the last generation instead of novelty when reaching the end of the experiment without the solution
             #print("solution found, fitness used!\n")
             genome.fitness = fitness_result
         #elif genome_count == GEN_N - 1:
@@ -338,7 +419,9 @@ def eval_genomes(genomes, config):
         #keep record of best fitness result in current generation
         if fitness_result > best_generation_fitness[1]:
             best_generation_fitness = (genome_id, fitness_result)
-            
+        if fitness_result > BEST_FITNESS_SCORE[2]:
+            BEST_FITNESS_SCORE = (genome ,genome_id, fitness_result)
+    print("best genome so far: ", BEST_FITNESS_SCORE[1:])
     print("this generation best fitness result:(genome_id, fitness_result)", best_generation_fitness)
     print("genomes' behaviours added to novelty archive: ",genome_added_n)
     if genome_added_n == 0:
@@ -356,7 +439,94 @@ def eval_genomes(genomes, config):
     
     GEN_N +=1
 
-def eval_genomes_checkpoint(genomes, config):
+
+def eval_genomes_gen(genomes, config):
+    #genome_count = 0
+    global GEN_N
+    print("GEN_N", GEN_N, "\n")
+    global BEST_FITNESS_SCORE
+    global NOVELTY_THRESHOLD_TIMEOUT
+    gen_behaviours = []
+    best_generation_fitness = (0, 0)
+    for genome_id, genome in genomes:
+        #genome_count += 1
+        #print("\nGENOME COUNT", genome_count )
+        genome.fitness = 0.0
+        net = neat.nn.FeedForwardNetwork.create(genome, config)
+        fitness_result, the_behaviour = eval_fitness(net, PREDS_DEF, PREYS_9, HEIGHT, WIDTH, TICKS)
+        novelty_score = calculate_novelty(the_behaviour, DIST, NOVELTY_THRESHOLD, None, gen_behaviours)
+        gen_behaviours.append(the_behaviour)
+        #print("fitness score:", fitness_result)
+        #print("NOVELTY SCORE:", novelty_score)
+        
+        #avoid false solution trigger from novelty
+        if novelty_score >= FITNESS_THRESHOLD:
+            novelty_score = FITNESS_THRESHOLD -1
+
+        if fitness_result >= FITNESS_THRESHOLD or GEN_N == MAX_N-1:# or fitness_result > novelty_score: # or genome_count == POP_N - 1: supposed to be for selecting the fitness score of the last generation instead of novelty when reaching the end of the experiment without the solution
+            #print("solution found, fitness used!\n")
+            genome.fitness = fitness_result
+        #elif genome_count == GEN_N - 1:
+        #    genome.fitness = fitness_result
+        else:
+            #print("solution not found, novelty score used for selection!\n")
+            genome.fitness = novelty_score
+        #keep record of best fitness result in current generation
+        if fitness_result > best_generation_fitness[1]:
+            best_generation_fitness = (genome_id, fitness_result)
+        if fitness_result > BEST_FITNESS_SCORE[2]:
+            BEST_FITNESS_SCORE = (genome ,genome_id, fitness_result)
+    print("best genome so far: ", BEST_FITNESS_SCORE[1:])
+    print("this generation best fitness result:(genome_id, fitness_result)", best_generation_fitness)
+    
+    GEN_N +=1
+
+def eval_genomes_r(genomes, config):
+     #genome_count = 0
+    global GEN_N
+    print("GEN_N", GEN_N, "\n")
+    global BEST_FITNESS_SCORE
+    global NOVELTY_THRESHOLD
+    best_generation_fitness = (0, 0)
+    gen_behaviours = []
+    for genome_id, genome in genomes:
+        #genome_count += 1
+        #print("\nGENOME COUNT", genome_count )
+        genome.fitness = 0.0
+        net = neat.nn.FeedForwardNetwork.create(genome, config)
+        fitness_result, the_behaviour = eval_fitness(net, PREDS_DEF, PREYS_9, HEIGHT, WIDTH, TICKS)
+        novelty_score = calculate_novelty(the_behaviour, DIST, NOVELTY_THRESHOLD, NOVELTY_ARCHIVE, None)
+        gen_behaviours.append(the_behaviour)
+        #print("fitness score:", fitness_result)
+        #print("NOVELTY SCORE:", novelty_score)
+        
+        #avoid false solution trigger from novelty
+        if novelty_score >= FITNESS_THRESHOLD:
+            novelty_score = FITNESS_THRESHOLD -1 
+
+        if fitness_result >= FITNESS_THRESHOLD or GEN_N == MAX_N-1:# or fitness_result > novelty_score: # or genome_count == POP_N - 1: supposed to be for selecting the fitness score of the last generation instead of novelty when reaching the end of the experiment without the solution
+            #print("solution found, fitness used!\n")
+            genome.fitness = fitness_result
+        #elif genome_count == GEN_N - 1:
+        #    genome.fitness = fitness_result
+        else:
+            #print("solution not found, novelty score used for selection!\n")
+            genome.fitness = novelty_score
+        #keep record of best fitness result in current generation
+        if fitness_result > best_generation_fitness[1]:
+            best_generation_fitness = (genome_id, fitness_result)
+        if fitness_result > BEST_FITNESS_SCORE[2]:
+            BEST_FITNESS_SCORE = (genome ,genome_id, fitness_result)
+
+    #each generation pick one random behaviour from genomes
+    NOVELTY_ARCHIVE.append(random.choice(gen_behaviours))
+    dump(NOVELTY_ARCHIVE, "out\\novelty_archive.pkl")
+
+    print("best genome so far: ", BEST_FITNESS_SCORE[1:])
+    print("this generation best fitness result:(genome_id, fitness_result)", best_generation_fitness)
+    GEN_N +=1
+
+def eval_genomes_checkpoint_a(genomes, config):
     """
     The function to evaluate the fitness of each genome in 
     the genomes list. 
@@ -376,7 +546,7 @@ def eval_genomes_checkpoint(genomes, config):
     NOVELTY_ARCHIVE = load("out\\novelty_archive.pkl")
     global GEN_N
     print("GEN_N", GEN_N, "\n")
-
+    global BEST_FITNESS_SCORE
     global NOVELTY_THRESHOLD  # Adjust this threshold as needed
     global NOVELTY_THRESHOLD_TIMEOUT
 
@@ -402,7 +572,7 @@ def eval_genomes_checkpoint(genomes, config):
             dump(NOVELTY_ARCHIVE, "out\\novelty_archive.pkl")
             genome_added_n += 1
 
-        if fitness_result >= FITNESS_THRESHOLD or GEN_N == MAX_N or fitness_result > novelty_score: # or genome_count == POP_N - 1: supposed to be for selecting the fitness score of the last generation instead of novelty when reaching the end of the experiment without the solution
+        if fitness_result >= FITNESS_THRESHOLD or GEN_N == MAX_N-1:# or fitness_result > novelty_score: # or genome_count == POP_N - 1: supposed to be for selecting the fitness score of the last generation instead of novelty when reaching the end of the experiment without the solution
             #print("solution found, fitness used!\n")
             genome.fitness = fitness_result
         #elif genome_count == GEN_N - 1:
@@ -413,6 +583,8 @@ def eval_genomes_checkpoint(genomes, config):
         #keep record of best fitness result in current generation
         if fitness_result > best_generation_fitness[1]:
             best_generation_fitness = (genome_id, fitness_result)
+        if fitness_result > BEST_FITNESS_SCORE[2]:
+            BEST_FITNESS_SCORE = (genome ,genome_id, fitness_result)
 
     print("this generation best fitness result:(genome_id, fitness_result)", best_generation_fitness)
     print("genomes' behaviours added to novelty archive: ",genome_added_n)
@@ -430,6 +602,86 @@ def eval_genomes_checkpoint(genomes, config):
     print("NOVELTY_THRESHOLD: ", NOVELTY_THRESHOLD, "\n")
     
     GEN_N +=1
+
+def eval_genomes_checkpoint_ag(genomes, config):
+    """
+    The function to evaluate the fitness of each genome in 
+    the genomes list. 
+    The provided configuration is used to create feed-forward 
+    neural network from each genome and after that created
+    the neural network evaluated in its ability to solve
+    PREY_PREDATOR problem. As a result of this function execution, the
+    the fitness score of each genome updated to the newly
+    evaluated one.
+    Arguments:
+        genomes: The list of genomes from population in the 
+                current generation
+        config: The configuration settings with algorithm
+                hyper-parameters
+    """
+    #genome_count = 0
+    NOVELTY_ARCHIVE = load("out\\novelty_archive.pkl")
+    global GEN_N
+    print("GEN_N", GEN_N, "\n")
+    global BEST_FITNESS_SCORE
+    global NOVELTY_THRESHOLD  # Adjust this threshold as needed
+    global NOVELTY_THRESHOLD_TIMEOUT
+    gen_behaviours = deque(maxlen=500)
+    genome_added_n = 0
+    best_generation_fitness = (0, 0)
+    for genome_id, genome in genomes:
+        #genome_count += 1
+        #print("\nGENOME COUNT", genome_count )
+        genome.fitness = 0.0
+        net = neat.nn.FeedForwardNetwork.create(genome, config)
+        fitness_result, the_behaviour = eval_fitness(net, PREDS_DEF, PREYS_9, HEIGHT, WIDTH, TICKS)
+        novelty_score = calculate_novelty(the_behaviour, DIST, NOVELTY_THRESHOLD, NOVELTY_ARCHIVE, gen_behaviours)
+        gen_behaviours.append(the_behaviour)
+        #print("fitness score:", fitness_result)
+        #print("NOVELTY SCORE:", novelty_score)
+        
+        #avoid false solution trigger from novelty
+        if novelty_score >= FITNESS_THRESHOLD:
+            novelty_score = FITNESS_THRESHOLD -1
+
+        # Add behavior to the archive if it is sufficiently novel
+        if novelty_score >= NOVELTY_THRESHOLD:
+            NOVELTY_ARCHIVE.append(the_behaviour)
+            dump(NOVELTY_ARCHIVE, "out\\novelty_archive.pkl")
+            genome_added_n += 1
+
+
+        if fitness_result >= FITNESS_THRESHOLD or GEN_N == MAX_N-1:# or fitness_result > novelty_score: # or genome_count == POP_N - 1: supposed to be for selecting the fitness score of the last generation instead of novelty when reaching the end of the experiment without the solution
+            #print("solution found, fitness used!\n")
+            genome.fitness = fitness_result
+        #elif genome_count == GEN_N - 1:
+        #    genome.fitness = fitness_result
+        else:
+            #print("solution not found, novelty score used for selection!\n")
+            genome.fitness = novelty_score
+        #keep record of best fitness result in current generation
+        if fitness_result > best_generation_fitness[1]:
+            best_generation_fitness = (genome_id, fitness_result)
+        if fitness_result > BEST_FITNESS_SCORE[2]:
+            BEST_FITNESS_SCORE = (genome ,genome_id, fitness_result)
+    print("best genome so far: ", BEST_FITNESS_SCORE[1:])
+    print("this generation best fitness result:(genome_id, fitness_result)", best_generation_fitness)
+    print("genomes' behaviours added to novelty archive: ",genome_added_n)
+    if genome_added_n == 0:
+        NOVELTY_THRESHOLD_TIMEOUT += 1
+    else:
+        NOVELTY_THRESHOLD_TIMEOUT = 0
+
+    if NOVELTY_THRESHOLD_TIMEOUT >= 2:
+        NOVELTY_THRESHOLD *= 0.9
+        print("NOVELTY THRESHOLD REDUCED")
+    if genome_added_n >=4:
+        NOVELTY_THRESHOLD *= 1.2
+        print("NOVELTY THRESHOLD INCREASED")
+    print("NOVELTY_THRESHOLD: ", NOVELTY_THRESHOLD, "\n")
+    
+    GEN_N +=1
+
 
 ### RUNNING ##########################################
 
@@ -475,15 +727,16 @@ def run_experiment(config_file, genomeloadfile = None):
 
 
     # Run for up to 300 generations.
-    best_genome = p.run(eval_genomes, MAX_N)#500
-    di_best=p.reporters.reporters[0].best_genome()
+    best_genome = p.run(eval_genomes_r, MAX_N)#500
+    #di_best=p.reporters.reporters[0].best_genome()
+    the_best_genome = BEST_FITNESS_SCORE[0]
 
     # Display the best genome among generations.
-    print('\nBest genome:\n{!s}'.format(best_genome))
+    print('\nBest genome:\n{!s}'.format(the_best_genome))
 
     # Visualize the experiment results
     node_names = {-1:'offx1', -2: 'offy1', -3: 'signal1', -4: 'signal2', 0:'Move_outputp', 1:'Signal'}
-    visualize.draw_net(config, best_genome, True, node_names=node_names, directory=out_dir)
+    visualize.draw_net(config, the_best_genome, True, node_names=node_names, directory=out_dir)
     print("AQUI!!!")
     visualize.plot_stats(stats, ylog=False, view=True, filename=os.path.join(out_dir, 'avg_fitness.svg'))
 
@@ -505,7 +758,7 @@ def run_experiment(config_file, genomeloadfile = None):
     #image2 = ImageGrab.grab(bbox=(500, 500, 500+com2, 500+larg2))
     #image2.save("results\ortogonalPredatorsProblemResultsSpecies.png")
 
-    return best_genome
+    return the_best_genome
 
 
 def clean_output():
@@ -594,14 +847,15 @@ def runCheckpointExperiment(filename, check_n):
     restoredPopulation.add_reporter(stats)
     restoredPopulation.add_reporter(neat.Checkpointer(5, filename_prefix=os.path.join(out_dir, 'neat-checkpoint-')))
 
-    best_genome = restoredPopulation.run(eval_genomes_checkpoint, gen_to_run)
+    best_genome = restoredPopulation.run(eval_genomes_checkpoint_ag, gen_to_run)
+    the_best_genome = BEST_FITNESS_SCORE[0]
 
     # Display the best genome among generations.
-    print('\nBest genome:\n{!s}'.format(best_genome))
+    print('\nBest genome:\n{!s}'.format(the_best_genome))
 
     # Visualize the experiment results
     node_names = {-1:'offx1', -2: 'offy1', -3: 'signal1', -4: 'signal2', 0:'Move_outputp', 1:'Signal'}
-    visualize.draw_net(restoredPopulation.config, best_genome, True, node_names=node_names, directory=out_dir)
+    visualize.draw_net(restoredPopulation.config, the_best_genome, True, node_names=node_names, directory=out_dir)
 
     visualize.plot_stats(stats, ylog=False, view=True, filename=os.path.join(out_dir, 'avg_fitness.svg'))
 
@@ -610,10 +864,10 @@ def runCheckpointExperiment(filename, check_n):
     #keep the best genome of the n experimentations in a separate file
     best_genome_path = 'storedgenomes\\bestgenome_NoComTeam1o.pkl'
     with open("storedgenomes\\bestgenome_NoComTeam1o.pkl", "wb") as f:
-            pickle.dump(best_genome, f)
+            pickle.dump(the_best_genome, f)
             f.close()
 
-    print("best_of_the_bestGenome.fitness", best_genome.fitness)
+    print("best_of_the_bestGenome.fitness", the_best_genome.fitness)
     print("end of regular experimentation!")
     print()
 
@@ -630,5 +884,5 @@ def runCheckpointExperiment(filename, check_n):
 nrunexperiment(1)
 #nrunexperiment(1, "storedgenomes\\goodgenomes_SignalInd.pkl")
 
-#checkpointfile = "out\\neat-checkpoint-458"
-#runCheckpointExperiment(checkpointfile, 458)
+#checkpointfile = "out\\neat-checkpoint-94"
+#runCheckpointExperiment(checkpointfile, 94)

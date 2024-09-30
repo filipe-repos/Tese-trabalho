@@ -91,6 +91,13 @@ def toroidalDistance1coord(coord1, coord2, dim):
         return dif
     return -(2*dim - dif)
 
+def toroidalDistance_signal(pos1, pos2, dim):
+    x1,y1 = pos1
+    x2,y2 = pos2
+    coord1= toroidalDistance1coord(x1, x2, dim)
+    coord2= toroidalDistance1coord(y1, y2, dim)
+    return (coord1,coord2)
+
 #calculates toroidal distance given 2 positions in 2d space
 def toroidalDistance_coords( pos1, pos2, width, height):
     x1,y1 = pos1
@@ -508,15 +515,33 @@ def ann_inputs_outputs_signal_t_T(tpreds, signals, tprey, net):
     return outputs, signals
 
 #novelty
-def calculate_novelty(behavior, archive, dim, threshold):
-    # Calculate novelty as the average distance to the k-nearest neighbors in the archive
-    k = min(10, len(archive))  # Use up to 10 neighbors
-    if k == 0:
-        return float(threshold)  # 0.1 novelty if archive is empty
+def calculate_novelty(behavior, dim, threshold, archive= None, c_gen_behaviours = None):
+    if archive != None and c_gen_behaviours == None:
+        # Calculate novelty as the average distance to the k-nearest neighbors in the archive
+        k = min(10, len(archive))  # Use up to 10 neighbors
+        if k == 0:
+            return float(threshold)  # 0.1 novelty if archive is empty
 
-    distances = sorted([np.linalg.norm(np.array(behavior) - np.array(b)) for b in archive])
-    novelty_score = np.mean(distances[:k])/(dim*2)
-    return novelty_score
+        distances = sorted([np.linalg.norm(np.array(behavior) - np.array(b)) for b in archive])
+        novelty_score = np.mean(distances[:k])/(dim*2)
+        return novelty_score
+    elif archive == None and  c_gen_behaviours != None:
+        # Calculate novelty as the average distance to the k-nearest neighbors in the current gen_behaviours
+        k = min(5, len(c_gen_behaviours))  # Use up to 10 neighbors
+        if k == 0:
+            return float(threshold)  # 0.1 novelty if archive is empty
+        distances = sorted([np.linalg.norm(np.array(behavior) - np.array(b)) for b in c_gen_behaviours])
+        novelty_score = np.mean(distances[:k])/(dim*2)
+        return novelty_score
+    elif archive != None and  c_gen_behaviours != None:
+        all_behaviours = archive + c_gen_behaviours
+        k = min(10, len(all_behaviours))  # Use up to 10 neighbors
+        if k == 0:
+            return float(threshold)  # 0.1 novelty if archive is empty
+        distances = sorted([np.linalg.norm(np.array(behavior) - np.array(b)) for b in all_behaviours])
+        novelty_score = np.mean(distances[:k])/(dim*2)
+        return novelty_score
+
 
 def load(file):
     """
