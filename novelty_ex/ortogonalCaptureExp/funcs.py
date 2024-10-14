@@ -213,8 +213,8 @@ def tprey_move(prey, tpreds, step):
             closestpred = tp
     #print("o predador mais próximo: ", closestpred.pos(), "cor: ", closestpred.color())
     #to make the prey move only when a predator is close enough to it 
-    if closestdistance > 10*STEP:
-        return
+    #if closestdistance > 10*STEP:
+    #    return
     
     #para manter um registo da posição anterior
     prey.old_pos = prey.pos()
@@ -252,8 +252,8 @@ def prey_move(prey, preds, step):
             closestpred = tp
     #print("o predador mais próximo: ", closestpred.pos(), "cor: ", closestpred.color())
     #to make the prey move only when a predator is close enough to it 
-    if closestdistance > 10*STEP:
-        return
+    #if closestdistance > 10*STEP:
+    #    return
     
     #para manter um registo da posição anterior
     prey.old_coords = prey.get_coords()

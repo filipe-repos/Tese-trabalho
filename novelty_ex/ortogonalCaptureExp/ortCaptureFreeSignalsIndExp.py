@@ -230,9 +230,10 @@ def eval_fitness1(net, preds_def, theprey, height, width, ticks):
             print("fitness:", (2*(width + height) - mediafinaldists)/ (10*STEP))
             print()
             #the_behaviour = tuple(finaldists)
-            the_behaviour = [pred.get_coords() for pred in preds]
+            the_behaviour = sorted([toroidalDistance_signal(prey.get_coords(), pred.get_coords(), DIST) for pred in preds])
+            the_behaviour2 = [y for x in the_behaviour for y in x]
             #the_behaviour.append([pred.get_coords() for pred in preds])
-            return ((2*(width + height) - mediafinaldists)/ (10*STEP)), the_behaviour # max threshold is 160 ((1600 - 0) / 10)
+            return ((2*(width + height) - mediafinaldists)/ (10*STEP)), the_behaviour2 # max threshold is 160 ((1600 - 0) / 10)
         
 
     #new code to avoid bad genomes or neural networks that make preds only move in one direction the whole time or all preds move same direction the whole time
@@ -264,9 +265,9 @@ def eval_fitness1(net, preds_def, theprey, height, width, ticks):
     #print("fitness:", (mediainidists - mediafinaldists) / 10)
     #the_behaviour = tuple(finaldists)
     the_behaviour = sorted([toroidalDistance_signal(prey.get_coords(), pred.get_coords(), DIST) for pred in preds])
-    #the_behaviour2 = [y for x in the_behaviour for y in x]
+    the_behaviour2 = [y for x in the_behaviour for y in x]
     #print("the_real_behaviour", the_behaviour)
-    return (mediainidists - mediafinaldists) / (10*STEP), the_behaviour
+    return (mediainidists - mediafinaldists) / (10*STEP), the_behaviour2
 
 
 # more constants
@@ -695,6 +696,7 @@ def run_experiment(config_file, genomeloadfile = None):
         config_file: the path to the file with experiment 
                     configuration
     """
+    dump(PREYS_9, "out\\savedPREYS.pkl")
     loaded_genome_s = None
     #part where it is possible to load previously trained genomes
     if genomeloadfile != None:
@@ -724,7 +726,6 @@ def run_experiment(config_file, genomeloadfile = None):
     stats = neat.StatisticsReporter()
     p.add_reporter(stats)
     p.add_reporter(neat.Checkpointer(5, filename_prefix=os.path.join(out_dir, 'neat-checkpoint-')))
-
 
     # Run for up to 300 generations.
     best_genome = p.run(eval_genomes_r, MAX_N)#500
@@ -834,7 +835,7 @@ def runCheckpointExperiment(filename, check_n):
 
     global GEN_N
     global MAX_N
-
+    PREYS_9= load("out\\savedPREYS.pkl")
     GEN_N = check_n
     gen_to_run  = MAX_N - GEN_N 
     config_path = os.path.join(local_dir, 'exercise.ini')
@@ -884,5 +885,5 @@ def runCheckpointExperiment(filename, check_n):
 nrunexperiment(1)
 #nrunexperiment(1, "storedgenomes\\goodgenomes_SignalInd.pkl")
 
-#checkpointfile = "out\\neat-checkpoint-94"
-#runCheckpointExperiment(checkpointfile, 94)
+#checkpointfile = "out\\neat-checkpoint-384"
+#runCheckpointExperiment(checkpointfile, 384)
