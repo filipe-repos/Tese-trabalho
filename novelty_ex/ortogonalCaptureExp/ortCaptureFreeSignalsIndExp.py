@@ -344,6 +344,7 @@ def eval_genomes_a(genomes, config):
         if fitness_result > BEST_FITNESS_SCORE[2]:
             BEST_FITNESS_SCORE = (genome ,genome_id, fitness_result)
 
+    dump(BEST_FITNESS_SCORE, "out\\BEST_FITNESS_GENOME.pkl")
     print("best genome so far: ", BEST_FITNESS_SCORE[1:])
     print("this generation best fitness result:(genome_id, fitness_result)", best_generation_fitness)
     print("genomes' behaviours added to novelty archive: ",genome_added_n)
@@ -422,6 +423,8 @@ def eval_genomes_ag(genomes, config):
             best_generation_fitness = (genome_id, fitness_result)
         if fitness_result > BEST_FITNESS_SCORE[2]:
             BEST_FITNESS_SCORE = (genome ,genome_id, fitness_result)
+
+    dump(BEST_FITNESS_SCORE, "out\\BEST_FITNESS_GENOME.pkl")
     print("best genome so far: ", BEST_FITNESS_SCORE[1:])
     print("this generation best fitness result:(genome_id, fitness_result)", best_generation_fitness)
     print("genomes' behaviours added to novelty archive: ",genome_added_n)
@@ -447,6 +450,7 @@ def eval_genomes_gen(genomes, config):
     print("GEN_N", GEN_N, "\n")
     global BEST_FITNESS_SCORE
     global NOVELTY_THRESHOLD_TIMEOUT
+
     gen_behaviours = []
     best_generation_fitness = (0, 0)
     for genome_id, genome in genomes:
@@ -477,6 +481,7 @@ def eval_genomes_gen(genomes, config):
             best_generation_fitness = (genome_id, fitness_result)
         if fitness_result > BEST_FITNESS_SCORE[2]:
             BEST_FITNESS_SCORE = (genome ,genome_id, fitness_result)
+    dump(BEST_FITNESS_SCORE, "out\\BEST_FITNESS_GENOME.pkl")
     print("best genome so far: ", BEST_FITNESS_SCORE[1:])
     print("this generation best fitness result:(genome_id, fitness_result)", best_generation_fitness)
     
@@ -488,6 +493,7 @@ def eval_genomes_r(genomes, config):
     print("GEN_N", GEN_N, "\n")
     global BEST_FITNESS_SCORE
     global NOVELTY_THRESHOLD
+
     best_generation_fitness = (0, 0)
     gen_behaviours = []
     for genome_id, genome in genomes:
@@ -523,6 +529,7 @@ def eval_genomes_r(genomes, config):
     NOVELTY_ARCHIVE.append(random.choice(gen_behaviours))
     dump(NOVELTY_ARCHIVE, "out\\novelty_archive.pkl")
 
+    dump(BEST_FITNESS_SCORE, "out\\BEST_FITNESS_GENOME.pkl")
     print("best genome so far: ", BEST_FITNESS_SCORE[1:])
     print("this generation best fitness result:(genome_id, fitness_result)", best_generation_fitness)
     GEN_N +=1
@@ -559,7 +566,7 @@ def eval_genomes_checkpoint_a(genomes, config):
         genome.fitness = 0.0
         net = neat.nn.FeedForwardNetwork.create(genome, config)
         fitness_result, the_behaviour = eval_fitness(net, PREDS_DEF, PREYS_9, HEIGHT, WIDTH, TICKS)
-        novelty_score = calculate_novelty(the_behaviour, NOVELTY_ARCHIVE, DIST, NOVELTY_THRESHOLD)
+        novelty_score = calculate_novelty(the_behaviour, DIST, NOVELTY_THRESHOLD, NOVELTY_ARCHIVE, None)
         #print("fitness score:", fitness_result)
         #print("NOVELTY SCORE:", novelty_score)
         
@@ -587,6 +594,8 @@ def eval_genomes_checkpoint_a(genomes, config):
         if fitness_result > BEST_FITNESS_SCORE[2]:
             BEST_FITNESS_SCORE = (genome ,genome_id, fitness_result)
 
+    dump(BEST_FITNESS_SCORE, "out\\BEST_FITNESS_GENOME.pkl")
+    print("best genome so far: ", BEST_FITNESS_SCORE[1:])
     print("this generation best fitness result:(genome_id, fitness_result)", best_generation_fitness)
     print("genomes' behaviours added to novelty archive: ",genome_added_n)
     if genome_added_n == 0:
@@ -627,6 +636,7 @@ def eval_genomes_checkpoint_ag(genomes, config):
     global BEST_FITNESS_SCORE
     global NOVELTY_THRESHOLD  # Adjust this threshold as needed
     global NOVELTY_THRESHOLD_TIMEOUT
+
     gen_behaviours = deque(maxlen=500)
     genome_added_n = 0
     best_generation_fitness = (0, 0)
@@ -665,6 +675,8 @@ def eval_genomes_checkpoint_ag(genomes, config):
             best_generation_fitness = (genome_id, fitness_result)
         if fitness_result > BEST_FITNESS_SCORE[2]:
             BEST_FITNESS_SCORE = (genome ,genome_id, fitness_result)
+            
+    dump(BEST_FITNESS_SCORE, "out\\BEST_FITNESS_GENOME.pkl")
     print("best genome so far: ", BEST_FITNESS_SCORE[1:])
     print("this generation best fitness result:(genome_id, fitness_result)", best_generation_fitness)
     print("genomes' behaviours added to novelty archive: ",genome_added_n)
@@ -696,6 +708,7 @@ def run_experiment(config_file, genomeloadfile = None):
         config_file: the path to the file with experiment 
                     configuration
     """
+    global BEST_FITNESS_SCORE
     dump(PREYS_9, "out\\savedPREYS.pkl")
     loaded_genome_s = None
     #part where it is possible to load previously trained genomes
@@ -728,7 +741,7 @@ def run_experiment(config_file, genomeloadfile = None):
     p.add_reporter(neat.Checkpointer(5, filename_prefix=os.path.join(out_dir, 'neat-checkpoint-')))
 
     # Run for up to 300 generations.
-    best_genome = p.run(eval_genomes_r, MAX_N)#500
+    best_genome = p.run(eval_genomes_ag, MAX_N)#500
     #di_best=p.reporters.reporters[0].best_genome()
     the_best_genome = BEST_FITNESS_SCORE[0]
 
@@ -738,17 +751,17 @@ def run_experiment(config_file, genomeloadfile = None):
     # Visualize the experiment results
     node_names = {-1:'offx1', -2: 'offy1', -3: 'signal1', -4: 'signal2', 0:'Move_outputp', 1:'Signal'}
     visualize.draw_net(config, the_best_genome, True, node_names=node_names, directory=out_dir)
-    print("AQUI!!!")
+    #print("AQUI!!!")
     visualize.plot_stats(stats, ylog=False, view=True, filename=os.path.join(out_dir, 'avg_fitness.svg'))
 
-    print("ALI!!!")
+    #print("ALI!!!")
     #save image of plot of the fitness
     #plot1 = gw.getWindowsWithTitle("Figure 1")[0]
     #com,larg =plot1.size
     #plot1.moveTo(10,10)
     #image1 = ImageGrab.grab(bbox=(10, 10, 10+com, 10+larg))
     #image1.save("results\ortogonalPredatorsProblemResultsFitness.png")
-    print("Acoli!!!")
+    #print("Acoli!!!")
 
     visualize.plot_species(stats, view=True, filename=os.path.join(out_dir, 'speciation.svg'))
 
@@ -790,8 +803,10 @@ def nrunexperiment(n, genomeloadfile = None):
             if genomeloadfile == None:
                 # Run the experiment
                 best_genome = run_experiment(config_path)
+                #the_best_genome = BEST_FITNESS_SCORE[0]
             else: 
                 best_genome = run_experiment(config_path, genomeloadfile)
+                #the_best_genome = BEST_FITNESS_SCORE[0]
 
             print("best_genome.fitness:", best_genome.fitness)
             #to get the best genome out of the n resulting best genomes of the n experiments 
@@ -836,6 +851,7 @@ def runCheckpointExperiment(filename, check_n):
     global GEN_N
     global MAX_N
     PREYS_9= load("out\\savedPREYS.pkl")
+    BEST_FITNESS_SCORE = load("out\\BEST_FITNESS_GENOME.pkl")
     GEN_N = check_n
     gen_to_run  = MAX_N - GEN_N 
     config_path = os.path.join(local_dir, 'exercise.ini')
@@ -872,11 +888,11 @@ def runCheckpointExperiment(filename, check_n):
     print("end of regular experimentation!")
     print()
 
-    print("simulate behavior of best genome on the trained set:", best_genome)
+    print("simulate behavior of best genome on the trained set:", the_best_genome)
     config = neat.Config(neat.DefaultGenome, neat.DefaultReproduction,
                         neat.DefaultSpeciesSet, neat.DefaultStagnation,
                         config_path)
-    net = neat.nn.FeedForwardNetwork.create(best_genome, config)
+    net = neat.nn.FeedForwardNetwork.create(the_best_genome, config)
     simula(net, PREDS_DEF, PREYS_9, PREYS_DEF, HEIGHT, WIDTH, TICKS)
 
 ### RUNNING END #################################################
