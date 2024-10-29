@@ -41,11 +41,11 @@ N_PREDS = 3
 #TICKS is the limit of turns allowed or movements to be done by all agents before the experiment ends
 TICKS = int(((HEIGHT*2) / STEP) * 1.5)
 # Define a global novelty archive
-NOVELTY_ARCHIVE = deque(maxlen=500)  # Set a limit to the archive size
+NOVELTY_ARCHIVE = deque(maxlen=1500)  # Set a limit to the archive size
 FITNESS_THRESHOLD = 18
-NOVELTY_THRESHOLD = 3
+NOVELTY_THRESHOLD = 4
 NOVELTY_THRESHOLD_TIMEOUT = 0
-BEST_FITNESS_SCORE = [None ,-1, -1]
+BEST_FITNESS_SCORE = [None ,-1, -1, -1, -1]
 
 #population amount
 POP_N = 500
@@ -342,7 +342,7 @@ def eval_genomes_ag(genomes, config):
             genome.fitness = FITNESS_THRESHOLD+1
         #Tenho de associar capturas e behaviours ao genome_id
     for genome, behaviour in zip(genomes, gen_behaviours):
-        novelty_score = calculate_novelty(behaviour, DIST, 10, gen_behaviours, None)#em vez de none todos os comportamentos desta geração inclusive ele proprio(k+1)
+        novelty_score = calculate_novelty(behaviour, DIST, 10, gen_behaviours, NOVELTY_ARCHIVE)#em vez de none todos os comportamentos desta geração inclusive ele proprio(k+1)
 
         # Add behavior to the archive if it is sufficiently novel
         if novelty_score >= NOVELTY_THRESHOLD:
@@ -412,48 +412,51 @@ def eval_genomes_gen(genomes, config):
 
 #Mudar
 def eval_genomes_r(genomes, config):
-     #genome_count = 0
+    #genome_count = 0
     global GEN_N
     print("GEN_N", GEN_N, "\n")
     global BEST_FITNESS_SCORE
-    global NOVELTY_THRESHOLD
+    global NOVELTY_THRESHOLD  # Adjust this threshold as needed
+    global NOVELTY_THRESHOLD_TIMEOUT
+    global NOVELTY_ARCHIVE
 
     best_generation_fitness = (0, 0)
-    gen_behaviours = []
+    gen_behaviours = deque(maxlen=500)
     for genome_id, genome in genomes:
         #genome_count += 1
         #print("\nGENOME COUNT", genome_count )
         genome.fitness = 0.0
         net = neat.nn.FeedForwardNetwork.create(genome, config)
+        #além do fitness result tenho de ter uma lista de nove boleanos a indicar se houve captura por ensaio
+        # e se houve não calculo o novelty desse individuo mas ponho um valor colossal (>= FITNESS_THRESHOLD) para sair com solução 
         fitness_result, the_behaviour, capturas = eval_fitness(net, PREDS_DEF, PREYS_9, HEIGHT, WIDTH, TICKS)
-        novelty_score = calculate_novelty(the_behaviour, DIST, NOVELTY_THRESHOLD, None, NOVELTY_ARCHIVE)
+        #this_generation_behaviours[genome_id] = the_behaviour
+        #gen_behaviours.append((genome_id, genome, the_behaviour, capturas))
         gen_behaviours.append(the_behaviour)
-        #print("fitness score:", fitness_result)
-        #print("NOVELTY SCORE:", novelty_score)
         
-        if all(capturas):
-            genome.fitness = FITNESS_THRESHOLD+1 
-
-        #elif genome_count == GEN_N - 1:
-        #    genome.fitness = fitness_result
-        else:
-            #print("solution not found, novelty score used for selection!\n")
-            genome.fitness = novelty_score
         #keep record of best fitness result in current generation
         if fitness_result > best_generation_fitness[1]:
-            best_generation_fitness = (genome_id, fitness_result)
+            best_generation_fitness = (genome_id, fitness_result, GEN_N, capturas, the_behaviour)
         if fitness_result > BEST_FITNESS_SCORE[2]:
             BEST_FITNESS_SCORE = (genome ,genome_id, fitness_result, GEN_N, capturas, the_behaviour)
+
+        if all(capturas):
+            genome.fitness = FITNESS_THRESHOLD+1
+        #Tenho de associar capturas e behaviours ao genome_id
+    for genome, behaviour in zip(genomes, gen_behaviours):
+        novelty_score = calculate_novelty(behaviour, DIST, 10, gen_behaviours, NOVELTY_ARCHIVE)#em vez de none todos os comportamentos desta geração inclusive ele proprio(k+1)
+        genome[1].fitness = novelty_score
+
+    dump(BEST_FITNESS_SCORE, "out\\BEST_FITNESS_GENOME.pkl")
+    print("best genome so far:(genome_id, fitness_result, gen, capturas, behaviour:\n) ", BEST_FITNESS_SCORE[1:], "\n")
+    print("this generation best fitness result:(genome_id, fitness_result, gen, capturas, behaviour:\n)", best_generation_fitness, "\n")
 
     #each generation pick one random behaviour from genomes
     NOVELTY_ARCHIVE.append(random.choice(gen_behaviours))
     dump(NOVELTY_ARCHIVE, "out\\novelty_archive.pkl")
 
-    dump(BEST_FITNESS_SCORE, "out\\BEST_FITNESS_GENOME.pkl")
-    print("best genome so far:(genome_id, fitness_result, gen, capturas, behaviour:\n) ", BEST_FITNESS_SCORE[1:], "\n")
-    print("this generation best fitness result:(genome_id, fitness_result, gen, capturas, behaviour:\n)", best_generation_fitness, "\n")
-    print("this generation best fitness result:(genome_id, fitness_result, gen, )", best_generation_fitness)
     GEN_N +=1
+
 
 def eval_genomes_checkpoint_ag(genomes, config):
     """
@@ -472,6 +475,7 @@ def eval_genomes_checkpoint_ag(genomes, config):
                 hyper-parameters
     """
     #genome_count = 0
+    global NOVELTY_ARCHIVE
     NOVELTY_ARCHIVE = load("out\\novelty_archive.pkl")
     global GEN_N
     print("GEN_N", GEN_N, "\n")
@@ -504,7 +508,7 @@ def eval_genomes_checkpoint_ag(genomes, config):
             genome.fitness = FITNESS_THRESHOLD+1
         #Tenho de associar capturas e behaviours ao genome_id
     for genome, behaviour in zip(genomes, gen_behaviours):
-        novelty_score = calculate_novelty(behaviour, DIST, 10, gen_behaviours, None)#em vez de none todos os comportamentos desta geração inclusive ele proprio(k+1)
+        novelty_score = calculate_novelty(behaviour, DIST, 10, gen_behaviours, NOVELTY_ARCHIVE)#em vez de none todos os comportamentos desta geração inclusive ele proprio(k+1)
 
         # Add behavior to the archive if it is sufficiently novel
         if novelty_score >= NOVELTY_THRESHOLD:
@@ -533,6 +537,54 @@ def eval_genomes_checkpoint_ag(genomes, config):
     print("NOVELTY_THRESHOLD: ", NOVELTY_THRESHOLD, "\n")    
     GEN_N +=1
 
+#Mudar
+def eval_genomes_checkpoint_r(genomes, config):
+    #genome_count = 0
+    global NOVELTY_ARCHIVE
+    NOVELTY_ARCHIVE = load("out\\novelty_archive.pkl")
+
+    global GEN_N
+    print("GEN_N", GEN_N, "\n")
+    global BEST_FITNESS_SCORE
+    global NOVELTY_THRESHOLD  # Adjust this threshold as needed
+    global NOVELTY_THRESHOLD_TIMEOUT
+
+    best_generation_fitness = (0, 0)
+    gen_behaviours = deque(maxlen=500)
+    for genome_id, genome in genomes:
+        #genome_count += 1
+        #print("\nGENOME COUNT", genome_count )
+        genome.fitness = 0.0
+        net = neat.nn.FeedForwardNetwork.create(genome, config)
+        #além do fitness result tenho de ter uma lista de nove boleanos a indicar se houve captura por ensaio
+        # e se houve não calculo o novelty desse individuo mas ponho um valor colossal (>= FITNESS_THRESHOLD) para sair com solução 
+        fitness_result, the_behaviour, capturas = eval_fitness(net, PREDS_DEF, PREYS_9, HEIGHT, WIDTH, TICKS)
+        #this_generation_behaviours[genome_id] = the_behaviour
+        #gen_behaviours.append((genome_id, genome, the_behaviour, capturas))
+        gen_behaviours.append(the_behaviour)
+        
+        #keep record of best fitness result in current generation
+        if fitness_result > best_generation_fitness[1]:
+            best_generation_fitness = (genome_id, fitness_result, GEN_N, capturas, the_behaviour)
+        if fitness_result > BEST_FITNESS_SCORE[2]:
+            BEST_FITNESS_SCORE = (genome ,genome_id, fitness_result, GEN_N, capturas, the_behaviour)
+
+        if all(capturas):
+            genome.fitness = FITNESS_THRESHOLD+1
+        #Tenho de associar capturas e behaviours ao genome_id
+    for genome, behaviour in zip(genomes, gen_behaviours):
+        novelty_score = calculate_novelty(behaviour, DIST, 10, gen_behaviours, NOVELTY_ARCHIVE)#em vez de none todos os comportamentos desta geração inclusive ele proprio(k+1)
+        genome[1].fitness = novelty_score
+
+    dump(BEST_FITNESS_SCORE, "out\\BEST_FITNESS_GENOME.pkl")
+    print("best genome so far:(genome_id, fitness_result, gen, capturas, behaviour:\n) ", BEST_FITNESS_SCORE[1:], "\n")
+    print("this generation best fitness result:(genome_id, fitness_result, gen, capturas, behaviour:\n)", best_generation_fitness, "\n")
+
+    #each generation pick one random behaviour from genomes
+    NOVELTY_ARCHIVE.append(random.choice(gen_behaviours))
+    dump(NOVELTY_ARCHIVE, "out\\novelty_archive.pkl")
+
+    GEN_N +=1
 
 ### RUNNING ##########################################
 
@@ -547,7 +599,11 @@ def run_experiment(config_file, genomeloadfile = None):
                     configuration
     """
     global BEST_FITNESS_SCORE
+    
+    #global PREYS_9
+    #PREYS_9= load("out\\savedPREYS.pkl")
     dump(PREYS_9, "out\\savedPREYS.pkl")
+
     loaded_genome_s = None
     #part where it is possible to load previously trained genomes
     if genomeloadfile != None:
@@ -579,7 +635,7 @@ def run_experiment(config_file, genomeloadfile = None):
     p.add_reporter(neat.Checkpointer(5, filename_prefix=os.path.join(out_dir, 'neat-checkpoint-')))
 
     # Run for up to 300 generations.
-    best_genome = p.run(eval_genomes_ag, MAX_N)#500
+    best_genome = p.run(eval_genomes_gen, MAX_N)#500
     #di_best=p.reporters.reporters[0].best_genome()
     the_fitness_genome = BEST_FITNESS_SCORE[0]
 
@@ -693,6 +749,8 @@ def runCheckpointExperiment(filename, check_n):
 
     global GEN_N
     global MAX_N
+    global PREYS_9
+    global BEST_FITNESS_SCORE
     PREYS_9= load("out\\savedPREYS.pkl")
     BEST_FITNESS_SCORE = load("out\\BEST_FITNESS_GENOME.pkl")
     GEN_N = check_n
@@ -707,8 +765,9 @@ def runCheckpointExperiment(filename, check_n):
     restoredPopulation.add_reporter(stats)
     restoredPopulation.add_reporter(neat.Checkpointer(5, filename_prefix=os.path.join(out_dir, 'neat-checkpoint-')))
 
-    best_genome = restoredPopulation.run(eval_genomes_checkpoint_ag, gen_to_run)
+    best_genome = restoredPopulation.run(eval_genomes_gen, gen_to_run)
     the_fitness_genome = BEST_FITNESS_SCORE[0]
+    dump(BEST_FITNESS_SCORE, "out\\BEST_FITNESS_GENOME.pkl")
 
     if the_fitness_genome.fitness >= best_genome.fitness or best_genome.fitness < 10:
         the_best_genome = the_fitness_genome
@@ -749,5 +808,5 @@ def runCheckpointExperiment(filename, check_n):
 nrunexperiment(1)
 #nrunexperiment(1, "storedgenomes\\goodgenomes_SignalInd.pkl")
 
-#checkpointfile = "out\\neat-checkpoint-384"
-#runCheckpointExperiment(checkpointfile, 384)
+#checkpointfile = "out\\neat-checkpoint-709"
+#runCheckpointExperiment(checkpointfile, 709)
