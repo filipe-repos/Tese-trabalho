@@ -50,7 +50,7 @@ BEST_FITNESS_SCORE = [None ,-1, -1, -1, -1]
 #population amount
 POP_N = 500
 #generations amount
-MAX_N = 1500
+MAX_N = 2
 GEN_N = 0 #contador usado no eval_genome()
 
 #simula
@@ -114,7 +114,7 @@ def simula1(net, preds, prey, height, width, ticks, cont):
             #to move 2 times making it move twice as fast
             #tpred_move(tpred, output, STEP)
             #print("tpred pos:", tpred.pos())
-
+            print("predator ", npredsig, " signal: ", signal)
         #print("pred new coords: ", tpred.position())
         #To make the prey not move commented the method function to make it move
         tprey_move(tprey, tpreds, STEP)
@@ -135,7 +135,7 @@ def simula1(net, preds, prey, height, width, ticks, cont):
             print("fitness:", (2*(WIDTH + HEIGHT) - mediafinaldists)/ (10*STEP))
             map.clearscreen()
 
-            frames[0].save("gifs\\predatorTrialSuccess" + str(cont) +"_SignalsInd.gif",
+            frames[0].save(".\out\\gifs\\predatorTrialSuccess" + str(cont) +"_SignalsInd.gif",
                save_all=True,
                append_images=frames[1:],
                duration=100,  # Set the duration for each frame in milliseconds
@@ -151,7 +151,7 @@ def simula1(net, preds, prey, height, width, ticks, cont):
     map.clearscreen()
     #print("fitness:",1/(dist1 + dist2 + dist3 + dist4))
     print("fitness:", (mediainidists - mediafinaldists) / (10*STEP))
-    frames[0].save("gifs\\best_genomeTrialRun" + str(cont) +"_SignalsInd.gif",
+    frames[0].save(".\out\\gifs\\best_genomeTrialRun" + str(cont) +"_SignalsInd.gif",
                save_all=True,
                append_images=frames[1:],
                duration=100,  # Set the duration for each frame in milliseconds
@@ -243,7 +243,6 @@ def eval_fitness1(net, preds_def, theprey, height, width, ticks):
             #the_behaviour.append([pred.get_coords() for pred in preds])
             return ((2*(width + height) - mediafinaldists)/ (10*STEP)), the_behaviour2, True # max threshold is 160 ((1600 - 0) / 10)
         
-
     #new code to avoid bad genomes or neural networks that make preds only move in one direction the whole time or all preds move same direction the whole time
     #predsposx = []
     #predsposy = []
@@ -429,7 +428,7 @@ def eval_genomes_r(genomes, config):
         net = neat.nn.FeedForwardNetwork.create(genome, config)
         #além do fitness result tenho de ter uma lista de nove boleanos a indicar se houve captura por ensaio
         # e se houve não calculo o novelty desse individuo mas ponho um valor colossal (>= FITNESS_THRESHOLD) para sair com solução 
-        fitness_result, the_behaviour, capturas = eval_fitness(net, PREDS_DEF, PREYS_9, HEIGHT, WIDTH, TICKS)
+        fitness_result, the_behaviour, capturas = eval_fitness(net, PREDS_DEF, PREYS_DEF, HEIGHT, WIDTH, TICKS)
         #this_generation_behaviours[genome_id] = the_behaviour
         #gen_behaviours.append((genome_id, genome, the_behaviour, capturas))
         gen_behaviours.append(the_behaviour)
@@ -450,6 +449,10 @@ def eval_genomes_r(genomes, config):
     dump(BEST_FITNESS_SCORE, "out\\BEST_FITNESS_GENOME.pkl")
     print("best genome so far:(genome_id, fitness_result, gen, capturas, behaviour:\n) ", BEST_FITNESS_SCORE[1:], "\n")
     print("this generation best fitness result:(genome_id, fitness_result, gen, capturas, behaviour:\n)", best_generation_fitness, "\n")
+
+    f = open("out\\gen_evo_info.txt", "a")
+    f.write("GEN " + str(GEN_N)  + "\n" + "best genome so far:(genome_id, fitness_result, gen, capturas, behaviour:)\n " +  str(BEST_FITNESS_SCORE[1:]) + "\n" + "this generation best fitness result:(genome_id, fitness_result, gen, capturas, behaviour:)\n" + str(best_generation_fitness) + "\n")
+    f.close()
 
     #each generation pick one random behaviour from genomes
     NOVELTY_ARCHIVE.append(random.choice(gen_behaviours))
@@ -558,7 +561,7 @@ def eval_genomes_checkpoint_r(genomes, config):
         net = neat.nn.FeedForwardNetwork.create(genome, config)
         #além do fitness result tenho de ter uma lista de nove boleanos a indicar se houve captura por ensaio
         # e se houve não calculo o novelty desse individuo mas ponho um valor colossal (>= FITNESS_THRESHOLD) para sair com solução 
-        fitness_result, the_behaviour, capturas = eval_fitness(net, PREDS_DEF, PREYS_9, HEIGHT, WIDTH, TICKS)
+        fitness_result, the_behaviour, capturas = eval_fitness(net, PREDS_DEF, PREYS_DEF, HEIGHT, WIDTH, TICKS)
         #this_generation_behaviours[genome_id] = the_behaviour
         #gen_behaviours.append((genome_id, genome, the_behaviour, capturas))
         gen_behaviours.append(the_behaviour)
@@ -580,6 +583,10 @@ def eval_genomes_checkpoint_r(genomes, config):
     print("best genome so far:(genome_id, fitness_result, gen, capturas, behaviour:\n) ", BEST_FITNESS_SCORE[1:], "\n")
     print("this generation best fitness result:(genome_id, fitness_result, gen, capturas, behaviour:\n)", best_generation_fitness, "\n")
 
+    f = open("out\\gen_evo_info.txt", "a")
+    f.write("GEN " + str(GEN_N)  + "\n" + "best genome so far:(genome_id, fitness_result, gen, capturas, behaviour:)\n " +  str(BEST_FITNESS_SCORE[1:]) + "\n" + "this generation best fitness result:(genome_id, fitness_result, gen, capturas, behaviour:)\n" + str(best_generation_fitness) + "\n")
+    f.close()
+
     #each generation pick one random behaviour from genomes
     NOVELTY_ARCHIVE.append(random.choice(gen_behaviours))
     dump(NOVELTY_ARCHIVE, "out\\novelty_archive.pkl")
@@ -600,9 +607,11 @@ def run_experiment(config_file, genomeloadfile = None):
     """
     global BEST_FITNESS_SCORE
     
-    #global PREYS_9
+    global PREYS_9
     #PREYS_9= load("out\\savedPREYS.pkl")
     dump(PREYS_9, "out\\savedPREYS.pkl")
+
+    os.mkdir(".\out\gifs")
 
     loaded_genome_s = None
     #part where it is possible to load previously trained genomes
@@ -635,7 +644,7 @@ def run_experiment(config_file, genomeloadfile = None):
     p.add_reporter(neat.Checkpointer(5, filename_prefix=os.path.join(out_dir, 'neat-checkpoint-')))
 
     # Run for up to 300 generations.
-    best_genome = p.run(eval_genomes_gen, MAX_N)#500
+    best_genome = p.run(eval_genomes_r, MAX_N)#500
     #di_best=p.reporters.reporters[0].best_genome()
     the_fitness_genome = BEST_FITNESS_SCORE[0]
 
@@ -649,27 +658,11 @@ def run_experiment(config_file, genomeloadfile = None):
 
     # Visualize the experiment results
     node_names = {-1:'offx1', -2: 'offy1', -3: 'signal1', -4: 'signal2', 0:'Move_outputp', 1:'Signal'}
-    visualize.draw_net(config, the_best_genome, True, node_names=node_names, directory=out_dir)
+    visualize.draw_net(config, the_best_genome, False, node_names=node_names, directory=out_dir)
     #print("AQUI!!!")
-    visualize.plot_stats(stats, ylog=False, view=True, filename=os.path.join(out_dir, 'avg_fitness.svg'))
+    visualize.plot_stats(stats, ylog=False, view=False, filename=os.path.join(out_dir, 'avg_fitness.svg'))
 
-    #print("ALI!!!")
-    #save image of plot of the fitness
-    #plot1 = gw.getWindowsWithTitle("Figure 1")[0]
-    #com,larg =plot1.size
-    #plot1.moveTo(10,10)
-    #image1 = ImageGrab.grab(bbox=(10, 10, 10+com, 10+larg))
-    #image1.save("results\ortogonalPredatorsProblemResultsFitness.png")
-    #print("Acoli!!!")
-
-    visualize.plot_species(stats, view=True, filename=os.path.join(out_dir, 'speciation.svg'))
-
-    #save image of plot of the species
-    #plot2 = gw.getWindowsWithTitle("Figure 1")[0]
-    #com2,larg2 =plot2.size
-    #plot2.moveTo(500, 500)
-    #image2 = ImageGrab.grab(bbox=(500, 500, 500+com2, 500+larg2))
-    #image2.save("results\ortogonalPredatorsProblemResultsSpecies.png")
+    visualize.plot_species(stats, view=False, filename=os.path.join(out_dir, 'speciation.svg'))
 
     return the_best_genome
 
@@ -683,9 +676,10 @@ def clean_output():
     os.makedirs(out_dir, exist_ok=False)
 
 def nrunexperiment(n, genomeloadfile = None):
-    best_of_the_bestGenome = None
-    best_of_the_bestGenomefitness = 0
+    #best_of_the_bestGenome = None
+    #best_of_the_bestGenomefitness = 0
     #run this n times
+    global GEN_N
     for i in range(n):
         if __name__ == '__main__':
             # Determine path to configuration file. This path manipulation is
@@ -708,41 +702,24 @@ def nrunexperiment(n, genomeloadfile = None):
                 #the_best_genome = BEST_FITNESS_SCORE[0]
 
             print("best_genome.fitness:", best_genome.fitness)
-            #to get the best genome out of the n resulting best genomes of the n experiments 
-            if best_genome.fitness > best_of_the_bestGenomefitness:
-                best_of_the_bestGenomefitness = best_genome.fitness
-                best_of_the_bestGenome = best_genome
-                
-            # Assuming 'genome' is your NEAT genome object
-            genome_path = 'storedgenomes\\goodgenomes_SignalInd.pkl'
 
-            # Save the genome to a file
-            with open(genome_path, "wb") as f:
-                pickle.dump(best_genome, f)
-                f.close()
+            print("simulate behavior of best genome:", best_genome)
+            config = neat.Config(neat.DefaultGenome, neat.DefaultReproduction,
+                                neat.DefaultSpeciesSet, neat.DefaultStagnation,
+                                config_path)
+            net = neat.nn.FeedForwardNetwork.create(best_genome, config)
+            simula(net, PREDS_DEF, PREYS_DEF, PREYS_TEST, HEIGHT, WIDTH, TICKS)
+            print("The END.")
 
-            if i < n-1:
-                #rawinput()
-                userinput = str(input("want to carry on with the program?:(y/n) "))
-                if userinput == "n":
-                    break
+            old_name_o = ".\out"
+            new_name_o = ".\out" + str(i+1)
+            os.rename(old_name_o, new_name_o)
+            os.mkdir(old_name_o)
 
-    #keep the best genome of the n experimentations in a separate file
-    best_genome_path = 'storedgenomes\\bestgenome_SignalInd.pkl'
-    with open("storedgenomes\\bestgenome_SignalInd.pkl", "wb") as f:
-            pickle.dump(best_of_the_bestGenome, f)
-            f.close()
-    print("best_of_the_bestGenome.fitness", best_of_the_bestGenome.fitness)
-    print("end of regular experimentation!")
-    print()
+            name_g = ".\out\gifs"
+            os.mkdir(name_g)
+            GEN_N = 0
 
-    print("simulate behavior of best genome:", best_of_the_bestGenome)
-    config = neat.Config(neat.DefaultGenome, neat.DefaultReproduction,
-                        neat.DefaultSpeciesSet, neat.DefaultStagnation,
-                        config_path)
-    net = neat.nn.FeedForwardNetwork.create(best_of_the_bestGenome, config)
-    simula(net, PREDS_DEF, PREYS_9, PREYS_TEST, HEIGHT, WIDTH, TICKS)
-    print("The END.")
 
 #loading checkpoint for continuation
 def runCheckpointExperiment(filename, check_n):
@@ -765,7 +742,7 @@ def runCheckpointExperiment(filename, check_n):
     restoredPopulation.add_reporter(stats)
     restoredPopulation.add_reporter(neat.Checkpointer(5, filename_prefix=os.path.join(out_dir, 'neat-checkpoint-')))
 
-    best_genome = restoredPopulation.run(eval_genomes_gen, gen_to_run)
+    best_genome = restoredPopulation.run(eval_genomes_checkpoint_r, gen_to_run)
     the_fitness_genome = BEST_FITNESS_SCORE[0]
     dump(BEST_FITNESS_SCORE, "out\\BEST_FITNESS_GENOME.pkl")
 
@@ -779,11 +756,11 @@ def runCheckpointExperiment(filename, check_n):
 
     # Visualize the experiment results
     node_names = {-1:'offx1', -2: 'offy1', -3: 'signal1', -4: 'signal2', 0:'Move_outputp', 1:'Signal'}
-    visualize.draw_net(restoredPopulation.config, the_best_genome, True, node_names=node_names, directory=out_dir)
+    visualize.draw_net(restoredPopulation.config, the_best_genome, False, node_names=node_names, directory=out_dir)
 
-    visualize.plot_stats(stats, ylog=False, view=True, filename=os.path.join(out_dir, 'avg_fitness.svg'))
+    visualize.plot_stats(stats, ylog=False, view=False, filename=os.path.join(out_dir, 'avg_fitness.svg'))
 
-    visualize.plot_species(stats, view=True, filename=os.path.join(out_dir, 'speciation.svg'))
+    visualize.plot_species(stats, view=False, filename=os.path.join(out_dir, 'speciation.svg'))
 
     #keep the best genome of the n experimentations in a separate file
     best_genome_path = 'storedgenomes\\bestgenome_NoComTeam1o.pkl'
@@ -805,7 +782,7 @@ def runCheckpointExperiment(filename, check_n):
 ### RUNNING END #################################################
 
 
-nrunexperiment(1)
+nrunexperiment(10)
 #nrunexperiment(1, "storedgenomes\\goodgenomes_SignalInd.pkl")
 
 #checkpointfile = "out\\neat-checkpoint-709"
