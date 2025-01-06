@@ -19,13 +19,13 @@ import turtle
 #File containing all functions used by the capture experience
 
 #DIST is The dimensions of map, onlyapplicable if map is square
-DIST = 350
+DIST = 200
 #width of map
-WIDTH = 350
+WIDTH = 200
 #height of map
-HEIGHT = 350
+HEIGHT = 200
 #Step how much the agents(preds and prey) move per turn. Should allways be DIST/50
-STEP = 7
+STEP = DIST / 50
 #DIRECTIONS
 DIRECTIONS = [(STEP,0), (-STEP, 0), (0, STEP), (0,-STEP)]
 
@@ -600,6 +600,24 @@ def calculate_novelty(behavior, archive, dim, threshold):
     distances = sorted([np.linalg.norm(np.array(behavior) - np.array(b)) for b in archive])
     novelty_score = np.mean(distances[:k])/(dim*2)
     return novelty_score
+
+#novelty
+def calculate_novelty(behavior, dim, K, c_gen_behaviours= None, archive= None):#novo argumento a indicar o K em vez do numero definido em bainxo
+    if archive != None:
+        all_behaviours = archive + c_gen_behaviours
+        k = K+1
+        distances = sorted([np.linalg.norm(np.array(behavior) - np.array(b)) for b in all_behaviours])
+        novelty_score = np.mean(distances[:k])/(dim*2)
+        return novelty_score
+    elif archive == None:
+        # Calculate novelty as the average distance to the k-nearest neighbors in the current gen_behaviours
+        k = K+1
+        distances = sorted([np.linalg.norm(np.array(behavior) - np.array(b)) for b in c_gen_behaviours])
+        novelty_score = np.mean(distances[:k])/(dim*2)
+        return novelty_score
+    #for the case where only archive is used(random behaviour to archive)
+    #elif c_gen_behaviours == None:
+    #    pass # duvida quanto ao calculo de novelty no caso da inserção ao acaso de comportamentos no arquivo
 
 def load(file):
     """
