@@ -27,15 +27,15 @@ import turtle
 from funcs import *
 
 #DIST is The dimensions of map, onlyapplicable if map is square
-DIST = 350
+DIST = 200
 #width of map
-WIDTH = 350
+WIDTH = 200
 #height of map
-HEIGHT = 350
+HEIGHT = 200
 #Step how much the agents(preds and prey) move per turn. Should allways be DIST/50
-STEP = 7
+STEP = DIST/50
 #N_Evals is the number of different evaluations(cases where prey is in different position) done per genome per generation
-N_EVALS = 1
+N_EVALS = 9
 #N_PREDS is the number of predators to be present in experiment and to chase the prey
 N_PREDS = 3
 #TICKS is the limit of turns allowed or movements to be done by all agents before the experiment ends
@@ -123,7 +123,7 @@ def simula1(net, preds, prey, height, width, ticks, cont):
             print("fitness:", (2*(WIDTH + HEIGHT) - mediafinaldists)/ (10*STEP))
             map.clearscreen()
 
-            frames[0].save("gifs\\predatorTrialSuccess" + str(cont) +"_NoComTeam1o.gif",
+            frames[0].save("out\\gifs\\predatorTrialSuccess" + str(cont) +"_NoComTeam1o.gif",
                save_all=True,
                append_images=frames[1:],
                duration=100,  # Set the duration for each frame in milliseconds
@@ -139,7 +139,7 @@ def simula1(net, preds, prey, height, width, ticks, cont):
     map.clearscreen()
     #print("fitness:",1/(dist1 + dist2 + dist3 + dist4))
     print("fitness:", (mediainidists - mediafinaldists) / (10*STEP))
-    frames[0].save("gifs\\best_genomeTrialRun" + str(cont) +"_NoComTeam1o.gif",
+    frames[0].save("out\\gifs\\best_genomeTrialRun" + str(cont) +"_NoComTeam1o.gif",
                save_all=True,
                append_images=frames[1:],
                duration=100,  # Set the duration for each frame in milliseconds
@@ -400,7 +400,7 @@ def eval_genomes_r(genomes, config):
         net = neat.nn.FeedForwardNetwork.create(genome, config)
         #além do fitness result tenho de ter uma lista de nove boleanos a indicar se houve captura por ensaio
         # e se houve não calculo o novelty desse individuo mas ponho um valor colossal (>= FITNESS_THRESHOLD) para sair com solução 
-        fitness_result, the_behaviour, capturas = eval_fitness(net, PREDS_DEF, PREYS_DEF, HEIGHT, WIDTH, TICKS)
+        fitness_result, the_behaviour, capturas = eval_fitness(net, PREDS_DEF, PREYS_9, HEIGHT, WIDTH, TICKS)
         #this_generation_behaviours[genome_id] = the_behaviour
         #gen_behaviours.append((genome_id, genome, the_behaviour, capturas))
         gen_behaviours.append(the_behaviour)
@@ -533,7 +533,7 @@ def eval_genomes_checkpoint_r(genomes, config):
         net = neat.nn.FeedForwardNetwork.create(genome, config)
         #além do fitness result tenho de ter uma lista de nove boleanos a indicar se houve captura por ensaio
         # e se houve não calculo o novelty desse individuo mas ponho um valor colossal (>= FITNESS_THRESHOLD) para sair com solução 
-        fitness_result, the_behaviour, capturas = eval_fitness(net, PREDS_DEF, PREYS_DEF, HEIGHT, WIDTH, TICKS)
+        fitness_result, the_behaviour, capturas = eval_fitness(net, PREDS_DEF, PREYS_9, HEIGHT, WIDTH, TICKS)
         #this_generation_behaviours[genome_id] = the_behaviour
         #gen_behaviours.append((genome_id, genome, the_behaviour, capturas))
         gen_behaviours.append(the_behaviour)
@@ -695,7 +695,7 @@ def nrunexperiment(n, genomeloadfile = None):
                                 neat.DefaultSpeciesSet, neat.DefaultStagnation,
                                 config_path)
             net = neat.nn.FeedForwardNetwork.create(best_genome, config)
-            simula(net, PREDS_DEF, PREYS_DEF, PREYS_TEST, HEIGHT, WIDTH, TICKS)
+            simula(net, PREDS_DEF, PREYS_9, PREYS_TEST, HEIGHT, WIDTH, TICKS)
             print("The END.")
 
             old_name_o = ".\out"
@@ -706,6 +706,8 @@ def nrunexperiment(n, genomeloadfile = None):
             name_g = ".\out\gifs"
             os.mkdir(name_g)
             GEN_N = 0
+            global BEST_FITNESS_SCORE
+            BEST_FITNESS_SCORE = [None ,-1, -1, -1, -1]
 
 
 #loading checkpoint for continuation
@@ -750,10 +752,10 @@ def runCheckpointExperiment(filename, check_n):
     visualize.plot_species(stats, view=False, filename=os.path.join(out_dir, 'speciation.svg'))
 
     #keep the best genome of the n experimentations in a separate file
-    best_genome_path = 'storedgenomes\\bestgenome_NoComTeam1o.pkl'
-    with open("storedgenomes\\bestgenome_NoComTeam1o.pkl", "wb") as f:
-            pickle.dump(the_best_genome, f)
-            f.close()
+    #best_genome_path = 'storedgenomes\\bestgenome_NoComTeam1o.pkl'
+    #with open("storedgenomes\\bestgenome_NoComTeam1o.pkl", "wb") as f:
+    #        pickle.dump(the_best_genome, f)
+    #        f.close()
 
     print("best_of_the_bestGenome.fitness", the_best_genome.fitness)
     print("end of regular experimentation!")
@@ -764,13 +766,13 @@ def runCheckpointExperiment(filename, check_n):
                         neat.DefaultSpeciesSet, neat.DefaultStagnation,
                         config_path)
     net = neat.nn.FeedForwardNetwork.create(the_best_genome, config)
-    simula(net, PREDS_DEF, PREYS_9, PREYS_DEF, HEIGHT, WIDTH, TICKS)
+    simula(net, PREDS_DEF, PREYS_9, PREYS_TEST, HEIGHT, WIDTH, TICKS)
 
 
 ### RUNNING END #################################################
 
-nrunexperiment(5)
+#nrunexperiment(1)
 #nrunexperiment(1, "storedgenomes\\goodgenomes_NoComTeam1o.pkl")
 
-#checkpointfile = "out\\neat-checkpoint-709"
-#runCheckpointExperiment(checkpointfile, 709)
+checkpointfile = "out\\neat-checkpoint-744"
+runCheckpointExperiment(checkpointfile, 744)

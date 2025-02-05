@@ -19,13 +19,13 @@ import turtle
 #File containing all functions used by the capture experience
 
 #DIST is The dimensions of map, onlyapplicable if map is square
-DIST = 350
+DIST = 200
 #width of map
-WIDTH = 350
+WIDTH = 200
 #height of map
-HEIGHT = 350
+HEIGHT = 200
 #Step how much the agents(preds and prey) move per turn. Should allways be DIST/50
-STEP = 7
+STEP = DIST / 50
 
 
 def createpredators_bottom(height, width, n, step):
@@ -73,7 +73,7 @@ def turtle_agent(agent_coords, color= "blue", forma = "circle"):
     ag.showturtle()
     ag.pendown()
 
-    ag.old_pos = None
+    ag.old_pos = agent_coords
     ag.initial_pos = ag.position()
     return ag
 
@@ -213,8 +213,8 @@ def tprey_move(prey, tpreds, step):
             closestpred = tp
     #print("o predador mais próximo: ", closestpred.pos(), "cor: ", closestpred.color())
     #to make the prey move only when a predator is close enough to it 
-    #if closestdistance > 10*STEP:
-    #    return
+    if closestdistance > 10*STEP:
+        return
     
     #para manter um registo da posição anterior
     prey.old_pos = prey.pos()
@@ -252,8 +252,8 @@ def prey_move(prey, preds, step):
             closestpred = tp
     #print("o predador mais próximo: ", closestpred.pos(), "cor: ", closestpred.color())
     #to make the prey move only when a predator is close enough to it 
-    #if closestdistance > 10*STEP:
-    #    return
+    if closestdistance > 10*STEP:
+        return
     
     #para manter um registo da posição anterior
     prey.old_coords = prey.get_coords()

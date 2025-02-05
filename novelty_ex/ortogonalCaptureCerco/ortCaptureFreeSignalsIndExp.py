@@ -35,7 +35,7 @@ HEIGHT = 350
 #Step how much the agents(preds and prey) move per turn. Should allways be DIST/50
 STEP = DIST/50
 #N_Evals is the number of different evaluations(cases where prey is in different position) done per genome per generation
-N_EVALS = 1
+N_EVALS = 9
 #N_PREDS is the number of predators to be present in experiment and to chase the prey
 N_PREDS = 4
 #TICKS is the limit of turns allowed or movements to be done by all agents before the experiment ends
@@ -50,7 +50,7 @@ BEST_FITNESS_SCORE = [None ,-1, -1, -1, -1]
 #population amount
 POP_N = 500
 #generations amount
-MAX_N = 500
+MAX_N = 1000
 GEN_N = 0 #contador usado no eval_genome()
 
 
@@ -112,10 +112,10 @@ def simula1(net, preds, prey, height, width, ticks, cont):
         #print("pred new coords: ", tpred.position())
         
         #To make the prey move, the method function to make it move
-        #newagentpos.append((tprey,tprey_newpos(tprey,tpreds, STEP)))
+        newagentpos.append((tprey,tprey_newpos(tprey,tpreds, STEP)))
 
         #To make the prey not move use this line bellow instead of 102, the method function to make it move
-        newagentpos.append((tprey, tprey.pos()))
+        #newagentpos.append((tprey, tprey.pos()))
 
         newagentmovements = limpamovimentos_t(newagentpos)
 
@@ -139,7 +139,7 @@ def simula1(net, preds, prey, height, width, ticks, cont):
             print("fitness:", (2*(WIDTH + HEIGHT) - mediafinaldists)/ (10*STEP))
             map.clearscreen()
 
-            frames[0].save("gifs\\predatorTrialSuccess" + str(cont) +"_SignalsInd.gif",
+            frames[0].save("out\\gifs\\predatorTrialSuccess" + str(cont) +"_SignalsInd.gif",
                save_all=True,
                append_images=frames[1:],
                duration=100,  # Set the duration for each frame in milliseconds
@@ -155,7 +155,7 @@ def simula1(net, preds, prey, height, width, ticks, cont):
     map.clearscreen()
     #print("fitness:",1/(dist1 + dist2 + dist3 + dist4))
     print("fitness:", (mediainidists - mediafinaldists) / (10*STEP))
-    frames[0].save("gifs\\best_genomeTrialRun" + str(cont) +"_SignalsInd.gif",
+    frames[0].save("out\\gifs\\best_genomeTrialRun" + str(cont) +"_SignalsInd.gif",
                save_all=True,
                append_images=frames[1:],
                duration=100,  # Set the duration for each frame in milliseconds
@@ -217,10 +217,10 @@ def eval_fitness1(net, preds_def, theprey, height, width, ticks):
             newagentpos.append((pred,pred_newpos(pred, output, STEP)))
 
         #pos da prey no fim da lista
-        #newagentpos.append((prey, prey_newpos(prey, preds, STEP)))
+        newagentpos.append((prey, prey_newpos(prey, preds, STEP)))
         
         #To make the prey not move use this line bellow instead of the previous, the method function to make it move
-        newagentpos.append((prey, prey.get_coords()))
+        #newagentpos.append((prey, prey.get_coords()))
         
         #print("limpa movimentos")
         newagentmovements = limpamovimentos(newagentpos)
@@ -303,6 +303,9 @@ local_dir = os.path.dirname(__file__)
 # The directory to store outputs
 out_dir = os.path.join(local_dir, 'out')
 
+if N_EVALS != 9:
+    PREYS_9 = PREYS_DEF
+
 ###### eval genomes ####################
 
 def eval_genomes_ag(genomes, config):
@@ -330,7 +333,7 @@ def eval_genomes_ag(genomes, config):
     global NOVELTY_ARCHIVE
 
     genome_added_n = 0
-    best_generation_fitness = (0, 0)
+    best_generation_fitness = (0, -10)
     gen_behaviours = deque(maxlen=500)
     for genome_id, genome in genomes:
         #genome_count += 1
@@ -365,9 +368,13 @@ def eval_genomes_ag(genomes, config):
         genome[1].fitness = novelty_score
 
     dump(BEST_FITNESS_SCORE, "out\\BEST_FITNESS_GENOME.pkl")
-    print("best genome so far:(genome_id, fitness_result, gen, capturas, behaviour:)\n", BEST_FITNESS_SCORE[1:], "\n")
-    print("this generation best fitness result:(genome_id, fitness_result, gen, capturas, behaviour:)\n", best_generation_fitness, "\n")
+    print("best genome so far:(genome_id, fitness_result, gen, capturas, behaviour):\n", BEST_FITNESS_SCORE[1:], "\n")
+    print("this generation best fitness result:(genome_id, fitness_result, gen, capturas, behaviour):\n", best_generation_fitness, "\n")
     print("genomes' behaviours added to novelty archive: ",genome_added_n)
+
+    f = open("out\\gen_evo_info.txt", "a")
+    f.write("GEN " + str(GEN_N)  + "\n" + "best genome so far:(genome_id, fitness_result, gen, capturas, behaviour:)\n " +  str(BEST_FITNESS_SCORE[1:]) + "\n" + "this generation best fitness result:(genome_id, fitness_result, gen, capturas, behaviour:)\n" + str(best_generation_fitness) + "\n\n")
+    f.close()
 
     if genome_added_n == 0:
         NOVELTY_THRESHOLD_TIMEOUT += 1
@@ -390,7 +397,7 @@ def eval_genomes_gen(genomes, config):
     print("GEN_N", GEN_N, "\n")
     global BEST_FITNESS_SCORE
 
-    best_generation_fitness = (0, 0)
+    best_generation_fitness = (0, 10)
     gen_behaviours = deque(maxlen=500)
     for genome_id, genome in genomes:
         #genome_count += 1
@@ -418,8 +425,14 @@ def eval_genomes_gen(genomes, config):
         genome[1].fitness = novelty_score
 
     dump(BEST_FITNESS_SCORE, "out\\BEST_FITNESS_GENOME.pkl")
-    print("best genome so far:(genome_id, fitness_result, gen, capturas, behaviour:)\n ", BEST_FITNESS_SCORE[1:], "\n")
-    print("this generation best fitness result:(genome_id, fitness_result, gen, capturas, behaviour:)\n", best_generation_fitness, "\n")
+    print("best genome so far:(genome_id, fitness_result, gen, capturas, behaviour):\n ", BEST_FITNESS_SCORE[1:], "\n")
+    print("this generation best fitness result:(genome_id, fitness_result, gen, capturas, behaviour):\n", best_generation_fitness, "\n")
+    
+    f = open("out\\gen_evo_info.txt", "a")
+    f.write("GEN " + str(GEN_N)  + "\n" + "best genome so far:(genome_id, fitness_result, gen, capturas, behaviour:)\n " +  str(BEST_FITNESS_SCORE[1:]) + "\n" + "this generation best fitness result:(genome_id, fitness_result, gen, capturas, behaviour:)\n" + str(best_generation_fitness) + "\n\n")
+    f.close()
+    
+
     GEN_N +=1
 
 #Mudar
@@ -432,7 +445,7 @@ def eval_genomes_r(genomes, config):
     global NOVELTY_THRESHOLD_TIMEOUT
     global NOVELTY_ARCHIVE
 
-    best_generation_fitness = (0, 0)
+    best_generation_fitness = (0, -10)
     gen_behaviours = deque(maxlen=500)
     for genome_id, genome in genomes:
         #genome_count += 1
@@ -441,7 +454,7 @@ def eval_genomes_r(genomes, config):
         net = neat.nn.FeedForwardNetwork.create(genome, config)
         #além do fitness result tenho de ter uma lista de nove boleanos a indicar se houve captura por ensaio
         # e se houve não calculo o novelty desse individuo mas ponho um valor colossal (>= FITNESS_THRESHOLD) para sair com solução 
-        fitness_result, the_behaviour, capturas = eval_fitness(net, PREDS_DEF, PREYS_DEF, HEIGHT, WIDTH, TICKS)
+        fitness_result, the_behaviour, capturas = eval_fitness(net, PREDS_DEF, PREYS_9, HEIGHT, WIDTH, TICKS)
         #this_generation_behaviours[genome_id] = the_behaviour
         #gen_behaviours.append((genome_id, genome, the_behaviour, capturas))
         gen_behaviours.append(the_behaviour)
@@ -460,11 +473,11 @@ def eval_genomes_r(genomes, config):
         genome[1].fitness = novelty_score
 
     dump(BEST_FITNESS_SCORE, "out\\BEST_FITNESS_GENOME.pkl")
-    print("best genome so far:(genome_id, fitness_result, gen, capturas, behaviour:)\n ", BEST_FITNESS_SCORE[1:], "\n")
-    print("this generation best fitness result:(genome_id, fitness_result, gen, capturas, behaviour:)\n", best_generation_fitness, "\n")
+    print("best genome so far:(genome_id, fitness_result, gen, capturas, behaviour):\n ", BEST_FITNESS_SCORE[1:], "\n")
+    print("this generation best fitness result:(genome_id, fitness_result, gen, capturas, behaviour):\n", best_generation_fitness, "\n")
 
     f = open("out\\gen_evo_info.txt", "a")
-    f.write("GEN " + str(GEN_N)  + "\n" + "best genome so far:(genome_id, fitness_result, gen, capturas, behaviour:)\n " +  str(BEST_FITNESS_SCORE[1:]) + "\n" + "this generation best fitness result:(genome_id, fitness_result, gen, capturas, behaviour:)\n" + str(best_generation_fitness) + "\n")
+    f.write("GEN " + str(GEN_N)  + "\n" + "best genome so far:(genome_id, fitness_result, gen, capturas, behaviour):\n " +  str(BEST_FITNESS_SCORE[1:]) + "\n" + "this generation best fitness result:(genome_id, fitness_result, gen, capturas, behaviour:)\n" + str(best_generation_fitness) + "\n\n")
     f.close()
 
     #each generation pick one random behaviour from genomes
@@ -500,7 +513,7 @@ def eval_genomes_checkpoint_ag(genomes, config):
     global NOVELTY_THRESHOLD_TIMEOUT
 
     genome_added_n = 0
-    best_generation_fitness = (0, 0)
+    best_generation_fitness = (0, -10)
     gen_behaviours = deque(maxlen=500)
     for genome_id, genome in genomes:
         #genome_count += 1
@@ -535,9 +548,13 @@ def eval_genomes_checkpoint_ag(genomes, config):
         genome[1].fitness = novelty_score
 
     dump(BEST_FITNESS_SCORE, "out\\BEST_FITNESS_GENOME.pkl")
-    print("best genome so far:(genome_id, fitness_result, gen, capturas, behaviour:)\n", BEST_FITNESS_SCORE[1:], "\n")
-    print("this generation best fitness result:(genome_id, fitness_result, gen, capturas, behaviour:)\n", best_generation_fitness, "\n")
+    print("best genome so far:(genome_id, fitness_result, gen, capturas, behaviour):\n", BEST_FITNESS_SCORE[1:], "\n")
+    print("this generation best fitness result:(genome_id, fitness_result, gen, capturas, behaviour):\n", best_generation_fitness, "\n")
     print("genomes' behaviours added to novelty archive: ",genome_added_n)
+
+    f = open("out\\gen_evo_info.txt", "a")
+    f.write("GEN " + str(GEN_N)  + "\n" + "best genome so far:(genome_id, fitness_result, gen, capturas, behaviour:)\n " +  str(BEST_FITNESS_SCORE[1:]) + "\n" + "this generation best fitness result:(genome_id, fitness_result, gen, capturas, behaviour:)\n" + str(best_generation_fitness) + "\n\n")
+    f.close()
 
     if genome_added_n == 0:
         NOVELTY_THRESHOLD_TIMEOUT += 1
@@ -565,7 +582,7 @@ def eval_genomes_checkpoint_r(genomes, config):
     global NOVELTY_THRESHOLD  # Adjust this threshold as needed
     global NOVELTY_THRESHOLD_TIMEOUT
 
-    best_generation_fitness = (0, 0)
+    best_generation_fitness = (0, -10)
     gen_behaviours = deque(maxlen=500)
     for genome_id, genome in genomes:
         #genome_count += 1
@@ -574,7 +591,7 @@ def eval_genomes_checkpoint_r(genomes, config):
         net = neat.nn.FeedForwardNetwork.create(genome, config)
         #além do fitness result tenho de ter uma lista de nove boleanos a indicar se houve captura por ensaio
         # e se houve não calculo o novelty desse individuo mas ponho um valor colossal (>= FITNESS_THRESHOLD) para sair com solução 
-        fitness_result, the_behaviour, capturas = eval_fitness(net, PREDS_DEF, PREYS_DEF, HEIGHT, WIDTH, TICKS)
+        fitness_result, the_behaviour, capturas = eval_fitness(net, PREDS_DEF, PREYS_9, HEIGHT, WIDTH, TICKS)
         #this_generation_behaviours[genome_id] = the_behaviour
         #gen_behaviours.append((genome_id, genome, the_behaviour, capturas))
         gen_behaviours.append(the_behaviour)
@@ -593,11 +610,11 @@ def eval_genomes_checkpoint_r(genomes, config):
         genome[1].fitness = novelty_score
 
     dump(BEST_FITNESS_SCORE, "out\\BEST_FITNESS_GENOME.pkl")
-    print("best genome so far:(genome_id, fitness_result, gen, capturas, behaviour:)\n", BEST_FITNESS_SCORE[1:], "\n")
-    print("this generation best fitness result:(genome_id, fitness_result, gen, capturas, behaviour:)\n", best_generation_fitness, "\n")
+    print("best genome so far:(genome_id, fitness_result, gen, capturas, behaviour):\n", BEST_FITNESS_SCORE[1:], "\n")
+    print("this generation best fitness result:(genome_id, fitness_result, gen, capturas, behaviour):\n", best_generation_fitness, "\n")
 
     f = open("out\\gen_evo_info.txt", "a")
-    f.write("GEN " + str(GEN_N)  + "\n" + "best genome so far:(genome_id, fitness_result, gen, capturas, behaviour:)\n " +  str(BEST_FITNESS_SCORE[1:]) + "\n" + "this generation best fitness result:(genome_id, fitness_result, gen, capturas, behaviour:)\n" + str(best_generation_fitness) + "\n")
+    f.write("GEN " + str(GEN_N)  + "\n" + "best genome so far:(genome_id, fitness_result, gen, capturas, behaviour:)\n " +  str(BEST_FITNESS_SCORE[1:]) + "\n" + "this generation best fitness result:(genome_id, fitness_result, gen, capturas, behaviour:)\n" + str(best_generation_fitness) + "\n\n")
     f.close()
 
     #each generation pick one random behaviour from genomes
@@ -719,7 +736,7 @@ def nrunexperiment(n, genomeloadfile = None):
                                 neat.DefaultSpeciesSet, neat.DefaultStagnation,
                                 config_path)
             net = neat.nn.FeedForwardNetwork.create(best_genome, config)
-            simula(net, PREDS_DEF, PREYS_DEF, PREYS_TEST, HEIGHT, WIDTH, TICKS)
+            simula(net, PREDS_DEF, PREYS_9, PREYS_TEST, HEIGHT, WIDTH, TICKS)
             print("The END.")
 
             old_name_o = ".\out"
@@ -730,6 +747,8 @@ def nrunexperiment(n, genomeloadfile = None):
             name_g = ".\out\gifs"
             os.mkdir(name_g)
             GEN_N = 0
+            global BEST_FITNESS_SCORE
+            BEST_FITNESS_SCORE = [None ,-1, -1, -1, -1]
 
 
 #nrunexperiment(1)
@@ -792,15 +811,15 @@ def runCheckpointExperiment(filename, check_n):
                         neat.DefaultSpeciesSet, neat.DefaultStagnation,
                         config_path)
     net = neat.nn.FeedForwardNetwork.create(the_best_genome, config)
-    simula(net, PREDS_DEF, PREYS_9, PREYS_DEF, HEIGHT, WIDTH, TICKS)
+    simula(net, PREDS_DEF, PREYS_9, PREYS_TEST, HEIGHT, WIDTH, TICKS)
 
 ### RUNNING END #################################################
 
-#nrunexperiment(1)
+#nrunexperiment(5)
 #nrunexperiment(1, "storedgenomes\\goodgenomes_SignalInd.pkl")
 
-checkpointfile = "out\\neat-checkpoint-187"
-runCheckpointExperiment(checkpointfile, 187)
+checkpointfile = "out\\neat-checkpoint-77"
+runCheckpointExperiment(checkpointfile, 77)
 
 
 ##################################################################################################################################################################

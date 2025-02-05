@@ -35,7 +35,7 @@ HEIGHT = 350
 #Step how much the agents(preds and prey) move per turn. Should allways be DIST/50
 STEP = 7
 #N_Evals is the number of different evaluations(cases where prey is in different position) done per genome per generation
-N_EVALS = 1
+N_EVALS = 9
 #N_PREDS is the number of predators to be present in experiment and to chase the prey
 N_PREDS = 3
 #TICKS is the limit of turns allowed or movements to be done by all agents before the experiment ends
@@ -594,8 +594,8 @@ def run_experiment(config_file, genomeloadfile = None):
     global BEST_FITNESS_SCORE
     
     global PREYS_9
-    PREYS_9= load("out\\savedPREYS.pkl")
-    #dump(PREYS_9, "out\\savedPREYS.pkl")
+    #PREYS_9= load("out\\savedPREYS.pkl")
+    dump(PREYS_9, "out\\savedPREYS.pkl")
 
     os.mkdir(".\out\gifs")
 
@@ -710,6 +710,8 @@ def nrunexperiment(n, genomeloadfile = None):
             name_g = ".\\out\\gifs"
             os.mkdir(name_g)
             GEN_N = 0
+            global BEST_FITNESS_SCORE
+            BEST_FITNESS_SCORE = [None ,-1, -1, -1, -1]
 
 #loading checkpoint for continuation
 def runCheckpointExperiment(filename, check_n):
@@ -746,17 +748,17 @@ def runCheckpointExperiment(filename, check_n):
 
     # Visualize the experiment results
     node_names = {-1:'offx1', -2: 'offy1', -3: 'offx2', -4: 'offy2', -5: 'offx3', -6: 'offy3', 0:'Move_outputp'}
-    visualize.draw_net(restoredPopulation.config, the_best_genome, True, node_names=node_names, directory=out_dir)
+    visualize.draw_net(restoredPopulation.config, the_best_genome, False, node_names=node_names, directory=out_dir)
 
-    visualize.plot_stats(stats, ylog=False, view=True, filename=os.path.join(out_dir, 'avg_fitness.svg'))
+    visualize.plot_stats(stats, ylog=False, view=False, filename=os.path.join(out_dir, 'avg_fitness.svg'))
 
-    visualize.plot_species(stats, view=True, filename=os.path.join(out_dir, 'speciation.svg'))
+    visualize.plot_species(stats, view=False, filename=os.path.join(out_dir, 'speciation.svg'))
 
     #keep the best genome of the n experimentations in a separate file
-    best_genome_path = 'storedgenomes\\bestgenome_NoComTeam1o.pkl'
-    with open("storedgenomes\\bestgenome_NoComTeam1o.pkl", "wb") as f:
-            pickle.dump(the_best_genome, f)
-            f.close()
+    #best_genome_path = 'storedgenomes\\bestgenome_NoComTeam1o.pkl'
+    #with open("storedgenomes\\bestgenome_NoComTeam1o.pkl", "wb") as f:
+    #        pickle.dump(the_best_genome, f)
+    #        f.close()
 
     print("best_of_the_bestGenome.fitness", the_best_genome.fitness)
     print("end of regular experimentation!")
@@ -767,14 +769,14 @@ def runCheckpointExperiment(filename, check_n):
                         neat.DefaultSpeciesSet, neat.DefaultStagnation,
                         config_path)
     net = neat.nn.FeedForwardNetwork.create(the_best_genome, config)
-    simula(net, PREDS_DEF, PREYS_9, PREYS_DEF, HEIGHT, WIDTH, TICKS)
+    simula(net, PREDS_DEF, PREYS_9, PREYS_TEST, HEIGHT, WIDTH, TICKS)
 
 
 ### RUNNING END #################################################
 
-
-nrunexperiment(1)
+#nrunexperiment(1)
 #nrunexperiment(1, "storedgenomes\\goodgenomes_NoComInd1o.pkl")
 
-#checkpointfile = "out\\neat-checkpoint-1390"
-#unCheckpointExperiment(checkpointfile, 1390)
+checkpointfile = "out\\neat-checkpoint-426"
+runCheckpointExperiment(checkpointfile, 426)
+

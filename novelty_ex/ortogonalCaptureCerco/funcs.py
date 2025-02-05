@@ -79,7 +79,7 @@ def turtle_agent(agent_coords, color= "blue", forma = "circle"):
     ag.showturtle()
     ag.pendown()
 
-    ag.old_pos = None
+    ag.old_pos = ag.position()
     ag.initial_pos = ag.position()
     return ag
 
@@ -233,8 +233,8 @@ def tprey_newpos(prey, tpreds, step):
             closestpred = tp
     #print("o predador mais próximo: ", closestpred.pos(), "cor: ", closestpred.color())
     #to make the prey move only when a predator is close enough to it 
-    if closestdistance > 10*STEP:
-        return prey.pos()
+    #if closestdistance > 10*STEP:
+    #    return prey.pos()
     
     #para manter um registo da posição anterior
     prey.old_pos = prey.pos()
@@ -273,8 +273,8 @@ def prey_newpos(prey, predadores, step):
             closestpred = tp
     #print("o predador mais próximo: ", closestpred.pos(), "cor: ", closestpred.color())
     #to make the prey move only when a predator is close enough to it 
-    if closestdistance > 10*STEP:
-        return prey.get_coords()
+    #if closestdistance > 10*STEP:
+    #    return prey.get_coords()
     
     #para manter um registo da posição anterior
     prey.old_coords = prey.get_coords()
@@ -407,14 +407,15 @@ def limpamovimentos(newagentpos):
     problemas = True
     while problemas:
         #print("problemas", problemas)
-        problemas = False
+        #problemas = False
         newagentpos2 = []
         for ag, ag_pos in newagentpos:
             if choca((ag, ag_pos), newagentpos) or atravessaram((ag, ag_pos), newagentpos):
                 problemas = True
-                newagentpos2.append((ag, ag.get_coords()))
+                newagentpos2.append((ag, ag.get_old_coords()))
             else:
                 newagentpos2.append((ag, ag_pos))
+                problemas = False
         newagentpos = newagentpos2
     #print("os agentes que vão mudar:", newagentpos)
     return newagentpos
@@ -425,14 +426,15 @@ def limpamovimentos_t(newagentpos):
     problemas = True
     while problemas:
 
-        problemas = False
+        #problemas = False
         newagentpos2 = []
         for ag, ag_pos in newagentpos:
             if choca((ag, ag_pos), newagentpos) or atravessaram_t((ag, ag_pos), newagentpos):
                 problemas = True
-                newagentpos2.append((ag, ag.pos()))
+                newagentpos2.append((ag, ag.old_pos))
             else:
                 newagentpos2.append((ag, ag_pos))
+                problemas = False
         newagentpos = newagentpos2
     #print("os agentes que vão mudar:", newagentpos)
     return newagentpos

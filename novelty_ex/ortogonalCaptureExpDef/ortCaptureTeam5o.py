@@ -28,15 +28,15 @@ from threading import Timer
 from funcs import *
 
 #DIST is The dimensions of map, onlyapplicable if map is square
-DIST = 350
+DIST = 200
 #width of map
-WIDTH = 350
+WIDTH = 200
 #height of map
-HEIGHT = 350
+HEIGHT = 200
 #Step how much the agents(preds and prey) move per turn. Should allways be DIST/50
-STEP = 7
+STEP = DIST/50
 #N_Evals is the number of different evaluations(cases where prey is in different position) done per genome per generation
-N_EVALS = 1
+N_EVALS = 9
 #N_PREDS is the number of predators to be present in experiment and to chase the prey
 N_PREDS = 3
 #TICKS is the limit of turns allowed or movements to be done by all agents before the experiment ends
@@ -130,7 +130,7 @@ def simula1(net, preds, prey, height, width, ticks, cont):
             print("fitness:", (2*(WIDTH + HEIGHT) - mediafinaldists)/ (10*STEP))
             map.clearscreen()
 
-            frames[0].save("gifs\\predatorTrialSuccess" + str(cont) +"_NoComTeam5o.gif",
+            frames[0].save("out\\gifs\\predatorTrialSuccess" + str(cont) +"_NoComTeam5o.gif",
                save_all=True,
                append_images=frames[1:],
                duration=100,  # Set the duration for each frame in milliseconds
@@ -146,7 +146,7 @@ def simula1(net, preds, prey, height, width, ticks, cont):
     map.clearscreen()
     #print("fitness:",1/(dist1 + dist2 + dist3 + dist4))
     print("fitness:", (mediainidists - mediafinaldists) / (10*STEP))
-    frames[0].save("gifs\\best_genomeTrialRun" + str(cont) +"_NoComTeam5o.gif",
+    frames[0].save("out\\gifs\\best_genomeTrialRun" + str(cont) +"_NoComTeam5o.gif",
                save_all=True,
                append_images=frames[1:],
                duration=100,  # Set the duration for each frame in milliseconds
@@ -263,7 +263,7 @@ def eval_fitness1(net, preds_def, theprey, height, width, ticks):
     #print("fitness:", (mediainidists - mediafinaldists) / 10)
     the_behaviour = sorted([toroidalDistance_signal(prey.get_coords(), pred.get_coords(), DIST) for pred in preds])
     the_behaviour2 = [y for x in the_behaviour for y in x]
-    return ((2*(width + height) - mediafinaldists)/ (10*STEP)), the_behaviour2, False
+    return (mediainidists - mediafinaldists) / (10*STEP), the_behaviour2, False
 
 
 # more constants
@@ -419,7 +419,7 @@ def eval_genomes_r(genomes, config):
         net = neat.nn.FeedForwardNetwork.create(genome, config)
         #além do fitness result tenho de ter uma lista de nove boleanos a indicar se houve captura por ensaio
         # e se houve não calculo o novelty desse individuo mas ponho um valor colossal (>= FITNESS_THRESHOLD) para sair com solução 
-        fitness_result, the_behaviour, capturas = eval_fitness(net, PREDS_DEF, PREYS_DEF, HEIGHT, WIDTH, TICKS)
+        fitness_result, the_behaviour, capturas = eval_fitness(net, PREDS_DEF, PREYS_9, HEIGHT, WIDTH, TICKS)
         #this_generation_behaviours[genome_id] = the_behaviour
         #gen_behaviours.append((genome_id, genome, the_behaviour, capturas))
         gen_behaviours.append(the_behaviour)
@@ -552,7 +552,7 @@ def eval_genomes_checkpoint_r(genomes, config):
         net = neat.nn.FeedForwardNetwork.create(genome, config)
         #além do fitness result tenho de ter uma lista de nove boleanos a indicar se houve captura por ensaio
         # e se houve não calculo o novelty desse individuo mas ponho um valor colossal (>= FITNESS_THRESHOLD) para sair com solução 
-        fitness_result, the_behaviour, capturas = eval_fitness(net, PREDS_DEF, PREYS_DEF, HEIGHT, WIDTH, TICKS)
+        fitness_result, the_behaviour, capturas = eval_fitness(net, PREDS_DEF, PREYS_9, HEIGHT, WIDTH, TICKS)
         #this_generation_behaviours[genome_id] = the_behaviour
         #gen_behaviours.append((genome_id, genome, the_behaviour, capturas))
         gen_behaviours.append(the_behaviour)
@@ -666,6 +666,7 @@ def run_experiment(config_file, genomeloadfile = None):
     #save image of plot of the species
     #plot2 = gw.getWindowsWithTitle("Figure 1")[0]
     #com2,larg2 =plot2.size
+
     #plot2.moveTo(500, 500)
     #image2 = ImageGrab.grab(bbox=(500, 500, 500+com2, 500+larg2))
     #image2.save("results\ortogonalPredatorsProblemResultsSpecies.png")
@@ -725,6 +726,8 @@ def nrunexperiment(n, genomeloadfile = None):
             name_g = ".\out\gifs"
             os.mkdir(name_g)
             GEN_N = 0
+            global BEST_FITNESS_SCORE
+            BEST_FITNESS_SCORE = [None ,-1, -1, -1, -1]
 
 
 #loading checkpoint for continuation
@@ -769,10 +772,10 @@ def runCheckpointExperiment(filename, check_n):
     visualize.plot_species(stats, view=False, filename=os.path.join(out_dir, 'speciation.svg'))
 
     #keep the best genome of the n experimentations in a separate file
-    best_genome_path = 'storedgenomes\\bestgenome_NoComTeam1o.pkl'
-    with open("storedgenomes\\bestgenome_NoComTeam1o.pkl", "wb") as f:
-            pickle.dump(the_best_genome, f)
-            f.close()
+    #best_genome_path = 'storedgenomes\\bestgenome_NoComTeam5o.pkl'
+    #with open("storedgenomes\\bestgenome_NoComTeam5o.pkl", "wb") as f:
+    #        pickle.dump(the_best_genome, f)
+    #        f.close()
 
     print("best_of_the_bestGenome.fitness", the_best_genome.fitness)
     print("end of regular experimentation!")
@@ -788,5 +791,8 @@ def runCheckpointExperiment(filename, check_n):
 
 ### RUNNING END #################################################
 
-nrunexperiment(5)
+#nrunexperiment(1)
 #nrunexperiment(1, "storedgenomes\\goodgenomes_NoComTeam5o.pkl")
+
+checkpointfile = "out\\neat-checkpoint-1314"
+runCheckpointExperiment(checkpointfile, 1314)
