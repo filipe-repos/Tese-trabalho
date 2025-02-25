@@ -19,13 +19,13 @@ import turtle
 #File containing all functions used by the capture experience
 
 #DIST is The dimensions of map, onlyapplicable if map is square
-DIST = 200
+DIST = 350
 #width of map
-WIDTH = 200
+WIDTH = 350
 #height of map
-HEIGHT = 200
+HEIGHT = 350
 #Step how much the agents(preds and prey) move per turn. Should allways be DIST/50
-STEP = DIST / 50
+STEP = DIST / 25
 
 
 def createpredators_bottom(height, width, n, step):
@@ -80,7 +80,7 @@ def turtle_agent(agent_coords, color= "blue", forma = "circle"):
 #change this function bellow it isnt optimal follow example from toroidalDistance_coords
 #normal distance calculations
 
-#distance between to coords, offsets are negative se a presa estiver em cima ou à direita do predador, e positivos se em baixo ou à esquerda do predador
+#distance between two coords, offsets are negative se a presa estiver em cima ou à direita do predador, e positivos se em baixo ou à esquerda do predador
 def toroidalDistance1coord(coord1, coord2, dim):
     dif = coord1 - coord2
     if dif < 0:

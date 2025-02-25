@@ -28,11 +28,11 @@ from threading import Timer
 from funcs import *
 
 #DIST is The dimensions of map, onlyapplicable if map is square
-DIST = 200
+DIST = 350
 #width of map
-WIDTH = 200
+WIDTH = 350
 #height of map
-HEIGHT = 200
+HEIGHT = 350
 #Step how much the agents(preds and prey) move per turn. Should allways be DIST/50
 STEP = DIST/50
 #N_Evals is the number of different evaluations(cases where prey is in different position) done per genome per generation
@@ -280,6 +280,8 @@ local_dir = os.path.dirname(__file__)
 # The directory to store outputs
 out_dir = os.path.join(local_dir, 'out')
 
+if N_EVALS != 9:
+    PREYS_9 = PREYS_DEF
 
 ###### eval genomes ####################
 

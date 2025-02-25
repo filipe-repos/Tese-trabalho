@@ -33,7 +33,7 @@ WIDTH = 350
 #height of map
 HEIGHT = 350
 #Step how much the agents(preds and prey) move per turn. Should allways be DIST/50
-STEP = 7
+STEP = DIST/50
 #N_Evals is the number of different evaluations(cases where prey is in different position) done per genome per generation
 N_EVALS = 9
 #N_PREDS is the number of predators to be present in experiment and to chase the prey
@@ -289,6 +289,9 @@ PREYS_9 = createPreys9(HEIGHT, WIDTH, PREDS_DEF, STEP)
 local_dir = os.path.dirname(__file__)
 # The directory to store outputs
 out_dir = os.path.join(local_dir, 'out')
+
+if N_EVALS != 9:
+    PREYS_9 = PREYS_DEF
 
 ###### eval genomes ####################
 
