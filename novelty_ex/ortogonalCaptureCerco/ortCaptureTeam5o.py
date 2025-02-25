@@ -786,7 +786,8 @@ def runCheckpointExperiment(filename, check_n):
     net = neat.nn.FeedForwardNetwork.create(the_best_genome, config)
     simula(net, PREDS_DEF, PREYS_9, PREYS_TEST, HEIGHT, WIDTH, TICKS)
 
+
 #nrunexperiment(1)
 
-checkpointfile = "out\\neat-checkpoint-229"
-runCheckpointExperiment(checkpointfile, 229)
+checkpointfile = "out\\neat-checkpoint-862"
+runCheckpointExperiment(checkpointfile, 862)

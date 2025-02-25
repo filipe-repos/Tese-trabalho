@@ -818,8 +818,8 @@ def runCheckpointExperiment(filename, check_n):
 #nrunexperiment(5)
 #nrunexperiment(1, "storedgenomes\\goodgenomes_SignalInd.pkl")
 
-checkpointfile = "out\\neat-checkpoint-77"
-runCheckpointExperiment(checkpointfile, 77)
+checkpointfile = "out\\neat-checkpoint-908"
+runCheckpointExperiment(checkpointfile, 908)
 
 
 ##################################################################################################################################################################

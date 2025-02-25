@@ -35,7 +35,7 @@ HEIGHT = 350
 #Step how much the agents(preds and prey) move per turn. Should allways be DIST/50
 STEP = DIST/50
 #N_Evals is the number of different evaluations(cases where prey is in different position) done per genome per generation
-N_EVALS = 1
+N_EVALS = 9
 #N_PREDS is the number of predators to be present in experiment and to chase the prey
 N_PREDS = 4
 #TICKS is the limit of turns allowed or movements to be done by all agents before the experiment ends
@@ -778,8 +778,8 @@ def runCheckpointExperiment(filename, check_n):
     simula(net, PREDS_DEF, PREYS_9, PREYS_TEST, HEIGHT, WIDTH, TICKS)
 
 
-nrunexperiment(3)
+#nrunexperiment(3)
 #nrunexperiment(1, "storedgenomes\\goodgenomes_NoComInd1o.pkl")
 
-#checkpointfile = "out\\neat-checkpoint-654"
-#runCheckpointExperiment(checkpointfile, 654)
+checkpointfile = "out\\neat-checkpoint-555"
+runCheckpointExperiment(checkpointfile, 555)
