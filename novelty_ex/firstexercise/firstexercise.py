@@ -121,7 +121,7 @@ def simula1(net, preds, dim, height, width, step, cont):
             print("fitness:", 1)
             #turtledisplay
             map.clearscreen()
-            frames[0].save("gifs\\1stExpTrial" + str(cont) +"_EvolvingComunicationModel_Success.gif",
+            frames[0].save(".\\out\\gifs\\1stExpTrial" + str(cont) +"_EvolvingComunicationModel_Success.gif",
                save_all=True,
                append_images=frames[1:],
                duration=100,  # Set the duration for each frame in milliseconds
@@ -132,7 +132,7 @@ def simula1(net, preds, dim, height, width, step, cont):
             print("fitness:", 0)
             #turtledisplay
             map.clearscreen()
-            frames[0].save("gifs\\1stExpTrial" + str(cont) +"_EvolvingComunicationModel_Fail.gif",
+            frames[0].save(".\\out\\gifs\\1stExpTrial" + str(cont) +"_EvolvingComunicationModel_Fail.gif",
                save_all=True,
                append_images=frames[1:],
                duration=100,  # Set the duration for each frame in milliseconds
@@ -142,7 +142,7 @@ def simula1(net, preds, dim, height, width, step, cont):
     print("fitness:",1/(dist1 + dist2))
     #turtledisplay
     map.clearscreen()
-    frames[0].save("gifs\\1stExpTrial" + str(cont) +"_EvolvingComunicationModel_Fail.gif",
+    frames[0].save(".\\out\\gifs\\1stExpTrial" + str(cont) +"_EvolvingComunicationModel_Fail.gif",
                save_all=True,
                append_images=frames[1:],
                duration=100,  # Set the duration for each frame in milliseconds
@@ -287,52 +287,38 @@ def display_preds_s(predator1, predator2, signal1, signal2, dim):
     print("signal2 sent=",signal2)
     print()
     
-def calculate_novelty(behavior, archive):
+def calculate_novelty(behavior, c_gen_behaviours, archive, k=11):
     # Calculate novelty as the average distance to the k-nearest neighbors in the archive
-    k = min(10, len(archive))  # Use up to 10 neighbors
-    if k == 0:
-        return float('0.1')  # 0.1 novelty if archive is empty
-
-    distances = sorted([np.linalg.norm(np.array(behavior) - np.array(b)) for b in archive])
+    all_behaviours = archive + c_gen_behaviours
+    distances = sorted([np.linalg.norm(np.array(behavior) - np.array(b)) for b in all_behaviours])
     novelty_score = np.mean(distances[:k])/(DIM*2)
+    print("novelty_score: ", novelty_score)
     return novelty_score
 
 def eval_genomes(genomes, config):
-    """
-    The function to evaluate the fitness of each genome in 
-    the genomes list. 
-    The provided configuration is used to create feed-forward 
-    neural network from each genome and after that created
-    the neural network evaluated in its ability to solve
-    XOR problem. As a result of this function execution, the
-    the fitness score of each genome updated to the newly
-    evaluated one.
-    Arguments:
-        genomes: The list of genomes from population in the 
-                current generation
-        config: The configuration settings with algorithm
-                hyper-parameters
-    """
+    gen_behaviours = deque(maxlen=500)
     for genome_id, genome in genomes:
         print("GENOME ", genome_id)
         genome.fitness = 0.0
         net = neat.nn.FeedForwardNetwork.create(genome, config)
         fitness_result, the_behaviour = eval_fitness(net)
-        novelty_score = calculate_novelty(the_behaviour, NOVELTY_ARCHIVE)
-        print("fitness score:", fitness_result)
-        print("NOVELTY SCORE:", novelty_score)
-        
-        # Add behavior to the archive if it is sufficiently novel
-        threshold = 0.1  # Adjust this threshold as needed
-        if novelty_score >= threshold:
-            NOVELTY_ARCHIVE.append(the_behaviour)
 
+        gen_behaviours.append(the_behaviour)
+
+        #print("fitness score:", fitness_result)
         if fitness_result == 1:
-            print("solution found, fitness used!\n")
+            #print("solution found, fitness used!\n")
             genome.fitness = fitness_result
-        else:
-            print("solution not found, novelty score used for selection!\n")
-            genome.fitness = novelty_score
+
+    for genome, behaviour in zip(genomes, gen_behaviours):
+        novelty_score = calculate_novelty(behaviour, gen_behaviours, NOVELTY_ARCHIVE)
+        
+        #print("NOVELTY SCORE:", novelty_score)
+        if genome[1].fitness != 1:
+            #print("solution not found, novelty score used for selection!\n")
+            genome[1].fitness = novelty_score
+    
+    NOVELTY_ARCHIVE.append(random.choice(gen_behaviours))
 
 def run_experiment(config_file):
     """
@@ -385,12 +371,31 @@ def run_experiment(config_file):
 
     # Visualize the experiment results
     node_names = {-1:'distanceToPrey1', -2: 'signal2 input', 0:'Move output', 1:'signal1 output'}
-    visualize.draw_net(config, best_genome, True, node_names=node_names, directory=out_dir)
-    visualize.plot_stats(stats, ylog=False, view=True, filename=os.path.join(out_dir, 'avg_fitness.svg'))
-    visualize.plot_species(stats, view=True, filename=os.path.join(out_dir, 'speciation.svg'))
+    visualize.draw_net(config, best_genome, False, node_names=node_names, directory=out_dir)
+    visualize.plot_stats(stats, ylog=False, view=False, filename=os.path.join(out_dir, 'avg_fitness.svg'))
+    visualize.plot_species(stats, view=False, filename=os.path.join(out_dir, 'speciation.svg'))
 
     return best_genome
 
+def n_run_experiment(n, config_path):
+
+    config = neat.Config(neat.DefaultGenome, neat.DefaultReproduction,
+                         neat.DefaultSpeciesSet, neat.DefaultStagnation,
+                         config_path)
+    for i in range(n):
+        best_genome = run_experiment(config_path)
+        net = neat.nn.FeedForwardNetwork.create(best_genome, config)
+        #simula(net, DIM)
+        simula(net, DIM, HEIGHT, WIDTH, STEP)
+
+        old_name_o = ".\out"
+        new_name_o = ".\out" + str(i+1)
+        os.rename(old_name_o, new_name_o)
+        os.mkdir(old_name_o)
+
+        name_g = ".\out\gifs"
+        os.mkdir(name_g)
+    print("The END.")
 
 def clean_output():
     if os.path.isdir(out_dir):
@@ -399,27 +404,21 @@ def clean_output():
 
     # create the output directory
     os.makedirs(out_dir, exist_ok=False)
+    os.makedirs(out_dir + "\\gifs")
 
 if __name__ == '__main__':
     # Determine path to configuration file. This path manipulation is
     # here so that the script will run successfully regardless of the
     # current working directory.
     config_path = os.path.join(local_dir, 'firstexercise.ini')
+    print("config_path: ", config_path)
+    #config_path = local_dir + "\\exercise.ini"
 
     # Clean results of previous run if any or init the output directory
     clean_output()
     print("BEGINNING!")
     # Run the experiment
-    best_genome = run_experiment(config_path)
-    print("end of regular experimentation!")
-    print()
-    print("simulate behavior of best genome:", best_genome)
-    config = neat.Config(neat.DefaultGenome, neat.DefaultReproduction,
-                         neat.DefaultSpeciesSet, neat.DefaultStagnation,
-                         config_path)
-    net = neat.nn.FeedForwardNetwork.create(best_genome, config)
-    #simula(net, DIM)
-    simula(net, DIM, HEIGHT, WIDTH, STEP)
+    best_genome = n_run_experiment(10,config_path)
     print("The END.")
     #predator1 = Predator(1)
     #predator2 = Predator(10)
